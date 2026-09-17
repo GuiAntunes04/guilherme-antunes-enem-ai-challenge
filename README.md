@@ -55,6 +55,14 @@ npm install
 npm run dev
 ```
 
+Preencha no `backend/.env` (Supabase → Project Settings → API):
+
+| Variável | Origem no Supabase |
+|----------|-------------------|
+| `SUPABASE_URL` | Project URL |
+| `SUPABASE_SECRET_KEY` | Secret key (somente backend) |
+| `SUPABASE_JWKS_URL` | JWKS URL (validação de JWT) |
+
 O servidor sobe em `http://localhost:3001`.
 
 ### Frontend
@@ -65,6 +73,13 @@ cp .env.example .env
 npm install
 npm run dev
 ```
+
+Preencha no `frontend/.env`:
+
+| Variável | Origem no Supabase |
+|----------|-------------------|
+| `VITE_SUPABASE_URL` | Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key (segura no browser) |
 
 A aplicação abre em `http://localhost:5173`.
 
@@ -94,4 +109,3 @@ Documentação: [docs.enem.dev](https://docs.enem.dev/introduction)
 ## Licença
 
 Projeto desenvolvido para fins educacionais e processo seletivo.
-# guilherme-antunes-enem-ai-challenge
