@@ -15,6 +15,12 @@ export type MeResponse = {
   profile: Profile
 }
 
+export type StatsResponse = {
+  simulations: number
+  essays: number
+  tutorSessions: number
+}
+
 export async function fetchMe(accessToken: string): Promise<MeResponse> {
   const response = await fetch(`${API_URL}/api/me`, {
     headers: {
@@ -32,4 +38,18 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
   }
 
   return response.json() as Promise<MeResponse>
+}
+
+export async function fetchStats(accessToken: string): Promise<StatsResponse> {
+  const response = await fetch(`${API_URL}/api/stats`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Falha ao carregar estatísticas')
+  }
+
+  return response.json() as Promise<StatsResponse>
 }
