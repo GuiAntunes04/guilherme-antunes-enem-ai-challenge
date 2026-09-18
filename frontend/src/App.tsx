@@ -15,7 +15,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/simulados" element={<SimuladosPage />} />
+          <Route path="/simulados/*" element={<SimuladosPage />} />
           <Route path="/tutor" element={<TutorPage />} />
           <Route path="/redacao" element={<RedacaoPage />} />
         </Route>

@@ -16,7 +16,7 @@ export const env = {
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
   supabaseJwksUrl: process.env.SUPABASE_JWKS_URL,
   geminiApiKey: process.env.GEMINI_API_KEY,
-  enemApiBaseUrl: process.env.ENEM_API_BASE_URL ?? 'https://api.enem.dev/v1',
+  enemhubApiKey: process.env.ENEMHUB_API_KEY,
 }
 
 export function validateProductionEnv(): void {
@@ -26,4 +26,5 @@ export function validateProductionEnv(): void {
   requireEnv('SUPABASE_SECRET_KEY')
   requireEnv('SUPABASE_JWKS_URL')
   requireEnv('GEMINI_API_KEY')
+  requireEnv('ENEMHUB_API_KEY')
 }

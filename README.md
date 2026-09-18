@@ -15,7 +15,7 @@ Plataforma web de estudos para o ENEM — desafio de estágio [Hyperflow](https:
 
 O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ensino Médio com:
 
-- **Simulados** com questões reais de provas anteriores, consumidas via [API ENEM](https://docs.enem.dev/introduction)
+- **Simulados** com questões reais de provas anteriores, consumidas via [EnemHub API](https://docs.enemhub.com.br/enem/exemplos)
 - **Tutor IA** (Google Gemini) para tirar dúvidas de matérias e conteúdos
 - **Corretor de redação** com feedback baseado nas 5 competências do ENEM
 
@@ -44,6 +44,7 @@ O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ens
 - Node.js 20+
 - npm
 - Conta no [Supabase](https://supabase.com) (Fase 1)
+- API Key da [EnemHub](https://docs.enemhub.com.br/enem/quickstart) (simulados)
 - API Key do [Google AI Studio](https://aistudio.google.com/) (Fase 5)
 
 ### Backend
@@ -62,6 +63,7 @@ Preencha no `backend/.env` (Supabase → Project Settings → API):
 | `SUPABASE_URL` | Project URL |
 | `SUPABASE_SECRET_KEY` | Secret key (somente backend) |
 | `SUPABASE_JWKS_URL` | JWKS URL (validação de JWT) |
+| `ENEMHUB_API_KEY` | API Key do produto ENEM ([EnemHub](https://platform.enemhub.com.br)) |
 
 O servidor sobe em `http://localhost:3001`.
 
@@ -108,22 +110,22 @@ curl http://localhost:3001/api/me \
 - [x] **Fase 1** — Supabase (schema, RLS, auth middleware)
 - [x] **Fase 2** — Autenticação (login, registro, sessão)
 - [x] **Fase 3** — Dashboard do estudante
-- [ ] **Fase 4** — Simulados com API ENEM + histórico
+- [x] **Fase 4** — Simulados com EnemHub API + histórico
 - [ ] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
 - [ ] **Fase 6** — Deploy (Vercel + Render) + README final
 
-## API ENEM
+## EnemHub API
 
-Questões oficiais são obtidas em tempo de execução (ou cache) a partir de `https://api.enem.dev/v1`.
+Questões oficiais são obtidas via proxy no backend a partir de `https://api.enemhub.com.br/v1/enem/questions`.
 
 Principais endpoints utilizados:
 
-- `GET /exams` — listar provas disponíveis
-- `GET /exams/{year}/questions` — listar questões por ano
+- `GET /v1/enem/questions?year=&page=&limit=` — listar questões (paginação até 100/página)
+- `GET /v1/enem/questions/:id` — buscar questão por UUID
 
-Documentação: [docs.enem.dev](https://docs.enem.dev/introduction)
+Documentação: [docs.enemhub.com.br](https://docs.enemhub.com.br/enem/exemplos)
 
-> A API possui limite de **1 requisição/segundo** nos endpoints sem cache. O backend fará o proxy e controle de rate limit.
+> Plano Free: 5.000 requisições/mês. O backend faz cache em memória e retry automático em `429`.
 
 ## Licença
 

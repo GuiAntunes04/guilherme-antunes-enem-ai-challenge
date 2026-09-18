@@ -1,10 +1,15 @@
-import { ComingSoonPage } from '../components/ComingSoonPage'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { SimuladosHome } from './simulados/SimuladosHome'
+import { SimulationQuizPage } from './simulados/SimulationQuizPage'
+import { SimulationResultPage } from './simulados/SimulationResultPage'
 
 export function SimuladosPage() {
   return (
-    <ComingSoonPage
-      title="Simulados"
-      description="Pratique com questões reais de ENEMs anteriores, filtradas por área e ano, usando a API ENEM."
-    />
+    <Routes>
+      <Route index element={<SimuladosHome />} />
+      <Route path=":attemptId/resultado" element={<SimulationResultPage />} />
+      <Route path=":attemptId" element={<SimulationQuizPage />} />
+      <Route path="*" element={<Navigate to="/simulados" replace />} />
+    </Routes>
   )
 }

@@ -11,7 +11,8 @@ statsRouter.get('/', requireAuth, async (req, res) => {
     supabaseAdmin
       .from('simulation_attempts')
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId),
+      .eq('user_id', userId)
+      .not('finished_at', 'is', null),
     supabaseAdmin
       .from('essays')
       .select('id', { count: 'exact', head: true })

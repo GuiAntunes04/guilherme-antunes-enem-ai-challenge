@@ -4,8 +4,10 @@
 
 1. Abra o [Supabase Dashboard](https://supabase.com/dashboard) do seu projeto
 2. Vá em **SQL Editor** → **New query**
-3. Cole o conteúdo de `migrations/20250917100000_initial_schema.sql`
-4. Clique em **Run**
+3. Cole e execute, nesta ordem:
+   - `migrations/20250917100000_initial_schema.sql`
+   - `migrations/20250917200000_add_question_indices.sql` (legado — substituída pela próxima)
+   - `migrations/20250918100000_enemhub_question_ids.sql`
 
 ## Tabelas criadas
 
