@@ -83,11 +83,30 @@ Preencha no `frontend/.env`:
 
 A aplicação abre em `http://localhost:5173`.
 
+### Banco de dados (Supabase)
+
+Após configurar o `.env`, aplique a migration inicial:
+
+1. Supabase Dashboard → **SQL Editor**
+2. Cole o arquivo `supabase/migrations/20250917100000_initial_schema.sql`
+3. Execute a query
+
+Instruções detalhadas em [`supabase/README.md`](supabase/README.md).
+
+### Testar autenticação (após Fase 2)
+
+Com um JWT válido do Supabase Auth:
+
+```bash
+curl http://localhost:3001/api/me \
+  -H "Authorization: Bearer SEU_TOKEN"
+```
+
 ## Roadmap de desenvolvimento
 
 - [x] **Fase 0** — Setup do monorepo (frontend + backend)
-- [ ] **Fase 1** — Supabase (schema, RLS, auth middleware)
-- [ ] **Fase 2** — Autenticação (login, registro, sessão)
+- [x] **Fase 1** — Supabase (schema, RLS, auth middleware)
+- [x] **Fase 2** — Autenticação (login, registro, sessão)
 - [ ] **Fase 3** — Dashboard do estudante
 - [ ] **Fase 4** — Simulados com API ENEM + histórico
 - [ ] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
