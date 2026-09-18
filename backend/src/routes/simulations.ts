@@ -62,15 +62,15 @@ function formatAttemptTitle(attempt: Record<string, unknown>): string {
 
 
   if (yearsUsed && yearsUsed.length > 1) {
-
     return `Multi-anos (${yearsUsed.join(', ')})`
+  }
 
+  if (yearsUsed?.length === 1) {
+    return `ENEM ${yearsUsed[0]}`
   }
 
   if (examYear) {
-
     return `ENEM ${examYear}`
-
   }
 
   return 'Simulado ENEM'

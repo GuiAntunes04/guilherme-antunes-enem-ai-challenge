@@ -1,6 +1,5 @@
 import type {
-  EnemArea,
-  EnemSubject,
+  EnemSubjectArea,
   EnemYear,
   SimulationDetailResponse,
   SimulationHistoryItem,
@@ -45,24 +44,14 @@ export async function fetchEnemYears(token: string): Promise<EnemYear[]> {
   return response.json() as Promise<EnemYear[]>
 }
 
-export async function fetchEnemAreas(token: string, year: number): Promise<EnemArea[]> {
-  const response = await authFetch(`/api/enem/areas?year=${year}`, token)
-
-  if (!response.ok) {
-    await parseError(response, 'Falha ao carregar áreas')
-  }
-
-  return response.json() as Promise<EnemArea[]>
-}
-
-export async function fetchEnemSubjects(token: string, year: number): Promise<EnemSubject[]> {
-  const response = await authFetch(`/api/enem/subjects?year=${year}`, token)
+export async function fetchEnemSubjectAreas(token: string): Promise<EnemSubjectArea[]> {
+  const response = await authFetch('/api/enem/subject-areas', token)
 
   if (!response.ok) {
     await parseError(response, 'Falha ao carregar matérias')
   }
 
-  return response.json() as Promise<EnemSubject[]>
+  return response.json() as Promise<EnemSubjectArea[]>
 }
 
 export async function fetchSimulationHistory(

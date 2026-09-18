@@ -108,6 +108,31 @@ export async function getIndexedYears(): Promise<number[]> {
   return years.sort((a, b) => b - a)
 }
 
+export async function getSubjectAreasFromIndex(): Promise<
+  { area: string; count: number }[]
+> {
+  await ensureIndexSynced()
+
+  const { data, error } = await supabaseAdmin
+    .from('enem_questions_index')
+    .select('subject_area')
+    .not('subject_area', 'is', null)
+
+  if (error) {
+    throw new Error(`Failed to load subject areas from index: ${error.message}`)
+  }
+
+  const counts = new Map<string, number>()
+  for (const row of data ?? []) {
+    const area = row.subject_area as string
+    counts.set(area, (counts.get(area) ?? 0) + 1)
+  }
+
+  return [...counts.entries()]
+    .map(([area, count]) => ({ area, count }))
+    .sort((a, b) => a.area.localeCompare(b.area))
+}
+
 export async function getAreasFromIndex(year: number): Promise<EnemHubArea[]> {
   await ensureIndexSynced()
 
@@ -239,18 +264,24 @@ export async function pickQuestionIdsByKnowledgeArea(
   return pickFromIndex(entries, count, ordered).map((entry) => entry.id)
 }
 
-export async function pickQuestionIdsBySubject(
-  year: number,
-  subjectId: string,
-  count: number,
-): Promise<{ ids: string[]; subjectName: string }> {
-  const entries = await queryIndexEntries({ year, subjectId })
-  const picked = sortIndexWithinArea(
-    shuffleAndPick(entries, Math.min(count, entries.length)),
-  )
+export async function pickQuestionIdsBySubjectArea(
+  subjectArea: string,
+  count: number | null,
+): Promise<{ ids: string[]; yearsUsed: number[] }> {
+  const entries = await queryIndexEntries({ subjectArea })
+
+  if (entries.length === 0) {
+    return { ids: [], yearsUsed: [] }
+  }
+
+  const limit = count === null ? entries.length : Math.min(count, entries.length)
+  const picked = shuffleAndPick(entries, limit)
+
+  const yearsUsed = [...new Set(picked.map((entry) => entry.year))].sort((a, b) => b - a)
+
   return {
     ids: picked.map((entry) => entry.id),
-    subjectName: entries[0]?.subject_name ?? 'Matéria',
+    yearsUsed,
   }
 }
 

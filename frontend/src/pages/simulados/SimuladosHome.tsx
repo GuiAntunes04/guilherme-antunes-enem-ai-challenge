@@ -1,19 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
-  fetchEnemSubjects,
+  fetchEnemSubjectAreas,
   fetchEnemYears,
   fetchSimulationHistory,
   startSimulation,
 } from '../../lib/simulations-api'
 import type {
-  EnemSubject,
+  EnemSubjectArea,
   EnemYear,
   SimulationHistoryItem,
   SimulationMode,
 } from '../../types/simulation'
-import { SIMULATION_MODES } from '../../types/simulation'
+import {
+  SIMULATION_MODES,
+  SUBJECT_PRACTICE_QUESTION_PRESETS,
+  SUBJECT_PRACTICE_TIMER_OPTIONS,
+} from '../../types/simulation'
 
 export function SimuladosHome() {
   const navigate = useNavigate()
@@ -21,66 +25,99 @@ export function SimuladosHome() {
   const token = session?.access_token ?? ''
 
   const [years, setYears] = useState<EnemYear[]>([])
-  const [subjects, setSubjects] = useState<EnemSubject[]>([])
+  const [subjectAreas, setSubjectAreas] = useState<EnemSubjectArea[]>([])
   const [history, setHistory] = useState<SimulationHistoryItem[]>([])
   const [mode, setMode] = useState<SimulationMode>('subject_practice')
   const [examYear, setExamYear] = useState<number | ''>('')
-  const [subjectId, setSubjectId] = useState('')
-  const [questionCount, setQuestionCount] = useState(10)
+  const [subjectArea, setSubjectArea] = useState('')
+  const [questionCount, setQuestionCount] = useState<number | 'all'>(10)
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMeta, setLoadingMeta] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const needsSubject = mode === 'subject_practice'
-  const needsQuestionCount = mode === 'subject_practice'
+  const isSubjectPractice = mode === 'subject_practice'
+  const needsYear = mode === 'day_one' || mode === 'day_two'
+
+  const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
+  const availableCount = selectedSubjectArea?.count ?? 0
+
+  const questionOptions = useMemo(() => {
+    const presets = SUBJECT_PRACTICE_QUESTION_PRESETS.filter((count) => count <= availableCount)
+    return { presets, showAll: availableCount > 0 }
+  }, [availableCount])
 
   useEffect(() => {
     if (!token) return
 
-    Promise.all([fetchEnemYears(token), fetchSimulationHistory(token)])
-      .then(([yearsData, historyData]) => {
-        setYears(yearsData)
+    Promise.all([fetchSimulationHistory(token)])
+      .then(([historyData]) => {
         setHistory(historyData)
-        if (yearsData.length > 0) {
-          setExamYear(yearsData[0].year)
-        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar'))
       .finally(() => setLoading(false))
   }, [token])
 
   useEffect(() => {
-    if (!token || !examYear || !needsSubject) return
+    if (!token || !needsYear) return
 
-    setLoadingMeta(true)
-    setSubjectId('')
-
-    fetchEnemSubjects(token, Number(examYear))
-      .then((subjectsData) => {
-        setSubjects(subjectsData)
-        if (subjectsData.length > 0) setSubjectId(subjectsData[0].id)
+    fetchEnemYears(token)
+      .then((yearsData) => {
+        setYears(yearsData)
+        if (yearsData.length > 0) {
+          setExamYear(yearsData[0].year)
+        }
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar opções'))
-      .finally(() => setLoadingMeta(false))
-  }, [token, examYear, needsSubject])
+      .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar anos'))
+  }, [token, needsYear])
 
   useEffect(() => {
-    if (mode === 'subject_practice' && questionCount > 45) {
-      setQuestionCount(45)
+    if (!token || !isSubjectPractice) return
+
+    setLoadingMeta(true)
+    setSubjectArea('')
+
+    fetchEnemSubjectAreas(token)
+      .then((areasData) => {
+        setSubjectAreas(areasData)
+        if (areasData.length > 0) {
+          setSubjectArea(areasData[0].area)
+        }
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar matérias'))
+      .finally(() => setLoadingMeta(false))
+  }, [token, isSubjectPractice])
+
+  useEffect(() => {
+    if (!isSubjectPractice || availableCount === 0) return
+
+    if (questionCount === 'all') return
+
+    if (questionCount > availableCount) {
+      const fallback =
+        [...SUBJECT_PRACTICE_QUESTION_PRESETS].reverse().find((count) => count <= availableCount) ??
+        'all'
+      setQuestionCount(fallback)
     }
-  }, [mode, questionCount])
+  }, [isSubjectPractice, availableCount, questionCount])
 
   async function handleStart() {
     setError(null)
     setStarting(true)
 
     try {
-      const payload = {
-        mode,
-        ...(examYear ? { examYear: Number(examYear) } : {}),
-        ...(needsSubject ? { subjectId, questionCount } : {}),
-      }
+      const payload = isSubjectPractice
+        ? {
+            mode,
+            subjectArea,
+            questionCount: questionCount === 'all' ? null : questionCount,
+            timeLimitSeconds,
+          }
+        : {
+            mode,
+            examYear: Number(examYear),
+          }
 
       const { attempt, questions } = await startSimulation(token, payload)
       navigate(`/simulados/${attempt.id}`, {
@@ -93,11 +130,9 @@ export function SimuladosHome() {
     }
   }
 
-  const canStart =
-    !starting &&
-    !loadingMeta &&
-    Boolean(examYear) &&
-    (needsSubject ? Boolean(subjectId) : true)
+  const canStart = isSubjectPractice
+    ? !starting && !loadingMeta && Boolean(subjectArea) && availableCount > 0
+    : !starting && Boolean(examYear)
 
   if (loading) {
     return <p className="text-slate-400">Carregando simulados...</p>
@@ -115,8 +150,8 @@ export function SimuladosHome() {
           Pratique com questões reais do ENEM
         </h1>
         <p className="mt-3 max-w-2xl text-slate-400">
-          Questões oficiais via EnemHub — pratique por matéria ou simule o 1º ou 2º dia
-          completo da prova, com cronômetro.
+          Questões oficiais via EnemHub — pratique por tópico com cronômetro personalizado ou
+          simule o 1º ou 2º dia completo da prova.
         </p>
       </div>
 
@@ -150,58 +185,88 @@ export function SimuladosHome() {
           )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="block">
-              <span className="mb-1.5 block text-sm text-slate-300">Ano da prova</span>
-              <select
-                value={examYear}
-                onChange={(e) => setExamYear(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
-              >
-                {years.map((item) => (
-                  <option key={item.year} value={item.year}>
-                    {item.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {needsSubject && (
+            {needsYear && (
               <label className="block">
-                <span className="mb-1.5 block text-sm text-slate-300">Matéria</span>
+                <span className="mb-1.5 block text-sm text-slate-300">Ano da prova</span>
                 <select
-                  value={subjectId}
-                  onChange={(e) => setSubjectId(e.target.value)}
-                  disabled={loadingMeta || subjects.length === 0}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
-                >
-                  {loadingMeta ? (
-                    <option value="">Carregando...</option>
-                  ) : (
-                    subjects.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
-            )}
-
-            {needsQuestionCount && (
-              <label className="block">
-                <span className="mb-1.5 block text-sm text-slate-300">Questões</span>
-                <select
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
+                  value={examYear}
+                  onChange={(e) => setExamYear(Number(e.target.value))}
                   className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
                 >
-                  {[5, 10, 15, 20, 30, 45].map((count) => (
-                    <option key={count} value={count}>
-                      {count} questões
+                  {years.map((item) => (
+                    <option key={item.year} value={item.year}>
+                      {item.title}
                     </option>
                   ))}
                 </select>
               </label>
+            )}
+
+            {isSubjectPractice && (
+              <>
+                <label className="block sm:col-span-2">
+                  <span className="mb-1.5 block text-sm text-slate-300">Matéria</span>
+                  <select
+                    value={subjectArea}
+                    onChange={(e) => setSubjectArea(e.target.value)}
+                    disabled={loadingMeta || subjectAreas.length === 0}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                  >
+                    {loadingMeta ? (
+                      <option value="">Carregando...</option>
+                    ) : (
+                      subjectAreas.map((item) => (
+                        <option key={item.area} value={item.area}>
+                          {item.area} ({item.count})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-sm text-slate-300">Questões</span>
+                  <select
+                    value={questionCount === 'all' ? 'all' : String(questionCount)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setQuestionCount(value === 'all' ? 'all' : Number(value))
+                    }}
+                    disabled={loadingMeta || availableCount === 0}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                  >
+                    {questionOptions.presets.map((count) => (
+                      <option key={count} value={count}>
+                        {count} questões
+                      </option>
+                    ))}
+                    {questionOptions.showAll && (
+                      <option value="all">Todas ({availableCount})</option>
+                    )}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-sm text-slate-300">Cronômetro</span>
+                  <select
+                    value={timeLimitSeconds === null ? 'unlimited' : String(timeLimitSeconds)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setTimeLimitSeconds(value === 'unlimited' ? null : Number(value))
+                    }}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
+                  >
+                    {SUBJECT_PRACTICE_TIMER_OPTIONS.map((option) => (
+                      <option
+                        key={option.label}
+                        value={option.value === null ? 'unlimited' : String(option.value)}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
             )}
           </div>
         </div>

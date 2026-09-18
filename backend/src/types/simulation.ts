@@ -37,6 +37,10 @@ export const TIME_DAY_SECONDS = 270 * 60
 export type StartSimulationBody = {
   mode: SimulationMode
   examYear?: number
-  subjectId?: string
-  questionCount?: number
+  /** subject_area from enem_questions_index (subject practice only) */
+  subjectArea?: string
+  /** Omit or null = all questions for the subject area */
+  questionCount?: number | null
+  /** null or 0 = unlimited (subject practice only) */
+  timeLimitSeconds?: number | null
 }

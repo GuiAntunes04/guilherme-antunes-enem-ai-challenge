@@ -4,7 +4,7 @@ export const SIMULATION_MODES: { value: SimulationMode; label: string; descripti
   {
     value: 'subject_practice',
     label: 'Matéria específica',
-    description: 'Questões de uma matéria, com quantidade configurável',
+    description: 'Questões aleatórias por tópico, com cronômetro configurável',
   },
   {
     value: 'day_one',
@@ -18,19 +18,29 @@ export const SIMULATION_MODES: { value: SimulationMode; label: string; descripti
   },
 ]
 
+export const SUBJECT_PRACTICE_TIMER_OPTIONS: {
+  value: number | null
+  label: string
+}[] = [
+  { value: null, label: 'Ilimitado' },
+  { value: 15 * 60, label: '15 minutos' },
+  { value: 30 * 60, label: '30 minutos' },
+  { value: 45 * 60, label: '45 minutos' },
+  { value: 60 * 60, label: '1 hora' },
+  { value: 90 * 60, label: '1h30' },
+  { value: 120 * 60, label: '2 horas' },
+]
+
+export const SUBJECT_PRACTICE_QUESTION_PRESETS = [5, 10, 15, 20, 30, 45] as const
+
 export type EnemYear = {
   year: number
   title: string
 }
 
-export type EnemArea = {
+export type EnemSubjectArea = {
   area: string
-}
-
-export type EnemSubject = {
-  id: string
-  name: string
-  area: string | null
+  count: number
 }
 
 export type SimulationQuestion = {
@@ -75,8 +85,9 @@ export type SimulationHistoryItem = SimulationAttempt
 export type StartSimulationPayload = {
   mode: SimulationMode
   examYear?: number
-  subjectId?: string
-  questionCount?: number
+  subjectArea?: string
+  questionCount?: number | null
+  timeLimitSeconds?: number | null
 }
 
 export type StartSimulationResponse = {

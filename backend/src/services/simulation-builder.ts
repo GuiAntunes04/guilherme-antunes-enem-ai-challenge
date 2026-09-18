@@ -1,13 +1,9 @@
 import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
 import { getKnowledgeAreasForDay } from '../lib/enem-knowledge-areas.js'
-import {
-  QUESTIONS_PER_AREA,
-  TIME_AREA_SECONDS,
-  TIME_DAY_SECONDS,
-} from '../types/simulation.js'
+import { QUESTIONS_PER_AREA, TIME_DAY_SECONDS } from '../types/simulation.js'
 import { fetchQuestionsByIds, sortLikeEnem } from './enemhub-api.js'
-import { pickQuestionIdsBySubject, pickQuestionIdsForDay } from './question-index.js'
+import { pickQuestionIdsBySubjectArea, pickQuestionIdsForDay } from './question-index.js'
 
 export type BuiltSimulation = {
   questions: EnemHubQuestion[]
@@ -15,7 +11,7 @@ export type BuiltSimulation = {
   yearsUsed: number[]
   discipline: string
   subjectId: string | null
-  timeLimitSeconds: number
+  timeLimitSeconds: number | null
 }
 
 async function resolveQuestionsInOrder(ids: string[]): Promise<EnemHubQuestion[]> {
@@ -27,6 +23,16 @@ async function resolveQuestionsInOrder(ids: string[]): Promise<EnemHubQuestion[]
   })
 }
 
+function resolveTimeLimitSeconds(
+  body: StartSimulationBody,
+): number | null {
+  const value = body.timeLimitSeconds
+  if (value === null || value === undefined || value <= 0) {
+    return null
+  }
+  return value
+}
+
 export async function buildSimulation(
   body: StartSimulationBody,
 ): Promise<BuiltSimulation> {
@@ -34,39 +40,38 @@ export async function buildSimulation(
 
   switch (mode) {
     case 'subject_practice': {
-      const examYear = Number(body.examYear)
-      const subjectId = String(body.subjectId ?? '')
-      const questionCount = Number(body.questionCount ?? QUESTIONS_PER_AREA)
+      const subjectArea = String(body.subjectArea ?? '').trim()
+      const questionCount =
+        body.questionCount === null || body.questionCount === undefined
+          ? null
+          : Number(body.questionCount)
 
-      if (!examYear || !subjectId) {
-        throw new Error('examYear and subjectId are required')
-      }
-      if (questionCount < 1 || questionCount > QUESTIONS_PER_AREA) {
-        throw new Error('questionCount must be between 1 and 45')
+      if (!subjectArea) {
+        throw new Error('subjectArea is required')
       }
 
-      const { ids, subjectName } = await pickQuestionIdsBySubject(
-        examYear,
-        subjectId,
+      if (questionCount !== null && (questionCount < 1 || !Number.isFinite(questionCount))) {
+        throw new Error('questionCount must be at least 1 or omitted for all questions')
+      }
+
+      const { ids, yearsUsed } = await pickQuestionIdsBySubjectArea(
+        subjectArea,
         questionCount,
       )
 
       if (ids.length === 0) {
-        throw new Error('No questions found for this subject and year')
+        throw new Error('No questions found for this subject area')
       }
 
       const questions = await resolveQuestionsInOrder(ids)
 
       return {
         questions,
-        examYear,
-        yearsUsed: [examYear],
-        discipline: subjectName,
-        subjectId,
-        timeLimitSeconds:
-          questionCount >= QUESTIONS_PER_AREA
-            ? TIME_AREA_SECONDS
-            : questionCount * 3 * 60,
+        examYear: null,
+        yearsUsed,
+        discipline: subjectArea,
+        subjectId: null,
+        timeLimitSeconds: resolveTimeLimitSeconds(body),
       }
     }
 
