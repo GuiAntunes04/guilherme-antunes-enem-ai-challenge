@@ -107,7 +107,7 @@ curl http://localhost:3001/api/me \
 - [x] **Fase 0** — Setup do monorepo (frontend + backend)
 - [x] **Fase 1** — Supabase (schema, RLS, auth middleware)
 - [x] **Fase 2** — Autenticação (login, registro, sessão)
-- [ ] **Fase 3** — Dashboard do estudante
+- [x] **Fase 3** — Dashboard do estudante
 - [ ] **Fase 4** — Simulados com API ENEM + histórico
 - [ ] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
 - [ ] **Fase 6** — Deploy (Vercel + Render) + README final
