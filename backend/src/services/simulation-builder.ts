@@ -1,8 +1,7 @@
 import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
+import { getKnowledgeAreasForDay } from '../lib/enem-knowledge-areas.js'
 import {
-  DAY_ONE_AREAS,
-  DAY_TWO_AREAS,
   QUESTIONS_PER_AREA,
   TIME_AREA_SECONDS,
   TIME_DAY_SECONDS,
@@ -78,11 +77,21 @@ export async function buildSimulation(
         throw new Error('examYear is required')
       }
 
-      const areas = mode === 'day_one' ? DAY_ONE_AREAS : DAY_TWO_AREAS
-      const ids = await pickQuestionIdsForDay(examYear, areas, QUESTIONS_PER_AREA)
+      const areas = getKnowledgeAreasForDay(mode)
+      const { ids, missingAreas } = await pickQuestionIdsForDay(
+        examYear,
+        areas,
+        QUESTIONS_PER_AREA,
+      )
 
       if (ids.length === 0) {
         throw new Error('No questions found for this exam day and year')
+      }
+
+      if (missingAreas.length > 0) {
+        throw new Error(
+          `Not enough questions for ENEM ${examYear}: missing ${missingAreas.join(', ')}`,
+        )
       }
 
       const questions = sortLikeEnem(await resolveQuestionsInOrder(ids))

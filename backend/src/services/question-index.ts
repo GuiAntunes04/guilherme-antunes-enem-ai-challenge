@@ -2,6 +2,11 @@ import { supabaseAdmin } from '../lib/supabase.js'
 import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { EnemHubArea, EnemHubSubjectOption } from '../types/enemhub.js'
 import type { QuestionIndexEntry } from '../types/question-index.js'
+import {
+  getSubjectNamesForKnowledgeArea,
+  resolveKnowledgeAreaFromSubject,
+  type EnemKnowledgeArea,
+} from '../lib/enem-knowledge-areas.js'
 import { ENEM_AREA_ORDER } from '../types/simulation.js'
 import {
   AVAILABLE_YEARS,
@@ -149,7 +154,13 @@ export async function getSubjectsFromIndex(year: number): Promise<EnemHubSubject
 }
 
 async function queryIndexEntries(
-  filters: { year?: number; years?: number[]; subjectArea?: string; subjectId?: string },
+  filters: {
+    year?: number
+    years?: number[]
+    subjectArea?: string
+    subjectId?: string
+    subjectNames?: string[]
+  },
 ): Promise<QuestionIndexEntry[]> {
   await ensureIndexSynced()
 
@@ -171,6 +182,10 @@ async function queryIndexEntries(
     query = query.eq('subject_id', filters.subjectId)
   }
 
+  if (filters.subjectNames?.length) {
+    query = query.in('subject_name', filters.subjectNames)
+  }
+
   const { data, error } = await query
 
   if (error) {
@@ -188,15 +203,16 @@ export function sortIndexWithinArea(entries: QuestionIndexEntry[]): QuestionInde
   })
 }
 
+function knowledgeAreaOrder(subjectName: string | null): number {
+  const area = resolveKnowledgeAreaFromSubject(subjectName)
+  if (!area) return ENEM_AREA_ORDER.length
+  return ENEM_AREA_ORDER.indexOf(area)
+}
+
 export function sortIndexLikeEnem(entries: QuestionIndexEntry[]): QuestionIndexEntry[] {
   return [...entries].sort((a, b) => {
-    const areaA = ENEM_AREA_ORDER.indexOf(
-      (a.subject_area ?? '') as (typeof ENEM_AREA_ORDER)[number],
-    )
-    const areaB = ENEM_AREA_ORDER.indexOf(
-      (b.subject_area ?? '') as (typeof ENEM_AREA_ORDER)[number],
-    )
-    if (areaA !== areaB) return areaA - areaB
+    const areaCompare = knowledgeAreaOrder(a.subject_name) - knowledgeAreaOrder(b.subject_name)
+    if (areaCompare !== 0) return areaCompare
     const nameCompare = (a.subject_name ?? '').localeCompare(b.subject_name ?? '')
     if (nameCompare !== 0) return nameCompare
     return a.year - b.year
@@ -212,13 +228,14 @@ export function pickFromIndex(
   return ordered ? sortIndexWithinArea(picked) : picked
 }
 
-export async function pickQuestionIdsByArea(
+export async function pickQuestionIdsByKnowledgeArea(
   year: number,
-  subjectArea: string,
+  knowledgeArea: EnemKnowledgeArea,
   count: number,
   ordered: boolean,
 ): Promise<string[]> {
-  const entries = await queryIndexEntries({ year, subjectArea })
+  const subjectNames = getSubjectNamesForKnowledgeArea(knowledgeArea)
+  const entries = await queryIndexEntries({ year, subjectNames })
   return pickFromIndex(entries, count, ordered).map((entry) => entry.id)
 }
 
@@ -239,17 +256,21 @@ export async function pickQuestionIdsBySubject(
 
 export async function pickQuestionIdsForDay(
   year: number,
-  areas: string[],
+  areas: EnemKnowledgeArea[],
   countPerArea: number,
-): Promise<string[]> {
+): Promise<{ ids: string[]; missingAreas: EnemKnowledgeArea[] }> {
   const ids: string[] = []
+  const missingAreas: EnemKnowledgeArea[] = []
 
   for (const area of areas) {
-    const block = await pickQuestionIdsByArea(year, area, countPerArea, true)
+    const block = await pickQuestionIdsByKnowledgeArea(year, area, countPerArea, true)
+    if (block.length === 0) {
+      missingAreas.push(area)
+    }
     ids.push(...block)
   }
 
-  return ids
+  return { ids, missingAreas }
 }
 
 export { AVAILABLE_YEARS }

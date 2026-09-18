@@ -4,6 +4,7 @@ import type {
   EnemHubQuestion,
   SanitizedQuestion,
 } from '../types/enemhub.js'
+import { resolveKnowledgeAreaFromSubject } from '../lib/enem-knowledge-areas.js'
 import { ENEM_AREA_ORDER } from '../types/simulation.js'
 
 const BASE_URL = 'https://api.enemhub.com.br/v1/enem/questions'
@@ -113,15 +114,17 @@ export function sortWithinArea(questions: EnemHubQuestion[]): EnemHubQuestion[] 
   })
 }
 
+function knowledgeAreaOrder(subjectName: string | undefined): number {
+  const area = resolveKnowledgeAreaFromSubject(subjectName)
+  if (!area) return ENEM_AREA_ORDER.length
+  return ENEM_AREA_ORDER.indexOf(area)
+}
+
 export function sortLikeEnem(questions: EnemHubQuestion[]): EnemHubQuestion[] {
   return [...questions].sort((a, b) => {
-    const areaA = ENEM_AREA_ORDER.indexOf(
-      (a.subject?.area ?? '') as (typeof ENEM_AREA_ORDER)[number],
-    )
-    const areaB = ENEM_AREA_ORDER.indexOf(
-      (b.subject?.area ?? '') as (typeof ENEM_AREA_ORDER)[number],
-    )
-    if (areaA !== areaB) return areaA - areaB
+    const areaCompare =
+      knowledgeAreaOrder(a.subject?.name) - knowledgeAreaOrder(b.subject?.name)
+    if (areaCompare !== 0) return areaCompare
     const nameCompare = (a.subject?.name ?? '').localeCompare(b.subject?.name ?? '')
     if (nameCompare !== 0) return nameCompare
     return a.year - b.year
