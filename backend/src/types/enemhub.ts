@@ -39,6 +39,12 @@ export type EnemHubArea = {
   area: string
 }
 
+export type EnemHubSubjectOption = {
+  id: string
+  name: string
+  area: string | null
+}
+
 export type SanitizedQuestion = {
   id: string
   year: number

@@ -1,17 +1,15 @@
 import { env } from '../config/env.js'
 import type {
-  EnemHubArea,
   EnemHubListResponse,
   EnemHubQuestion,
   SanitizedQuestion,
 } from '../types/enemhub.js'
+import { ENEM_AREA_ORDER } from '../types/simulation.js'
 
 const BASE_URL = 'https://api.enemhub.com.br/v1/enem/questions'
-const MAX_PAGE_SIZE = 100
 const MAX_RETRIES = 3
 
 const questionCache = new Map<string, EnemHubQuestion>()
-const areasCache = new Map<number, EnemHubArea[]>()
 
 export const AVAILABLE_YEARS = [
   2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010,
@@ -70,45 +68,8 @@ export async function fetchQuestionById(id: string): Promise<EnemHubQuestion> {
   return question
 }
 
-export async function fetchAllQuestionsForYear(year: number): Promise<EnemHubQuestion[]> {
-  const all: EnemHubQuestion[] = []
-
-  for (let page = 1; ; page += 1) {
-    const { data, meta } = await fetchQuestionsList({
-      year: String(year),
-      page: String(page),
-      limit: String(MAX_PAGE_SIZE),
-    })
-
-    all.push(...data)
-    cacheQuestions(data)
-
-    if (all.length >= meta.total || data.length === 0) break
-  }
-
-  return all
-}
-
 export async function fetchQuestionsByIds(ids: string[]): Promise<EnemHubQuestion[]> {
   return Promise.all(ids.map((id) => fetchQuestionById(id)))
-}
-
-export async function fetchAreas(year: number): Promise<EnemHubArea[]> {
-  const cached = areasCache.get(year)
-  if (cached) return cached
-
-  const all = await fetchAllQuestionsForYear(year)
-  const areaSet = new Set<string>()
-
-  for (const question of all) {
-    if (question.subject?.area) {
-      areaSet.add(question.subject.area)
-    }
-  }
-
-  const areas = [...areaSet].sort().map((area) => ({ area }))
-  areasCache.set(year, areas)
-  return areas
 }
 
 export function cacheQuestions(questions: EnemHubQuestion[]): void {
@@ -142,4 +103,27 @@ export function shuffleAndPick<T>(items: T[], count: number): T[] {
   }
 
   return copy.slice(0, count)
+}
+
+export function sortWithinArea(questions: EnemHubQuestion[]): EnemHubQuestion[] {
+  return [...questions].sort((a, b) => {
+    const nameCompare = (a.subject?.name ?? '').localeCompare(b.subject?.name ?? '')
+    if (nameCompare !== 0) return nameCompare
+    return a.year - b.year
+  })
+}
+
+export function sortLikeEnem(questions: EnemHubQuestion[]): EnemHubQuestion[] {
+  return [...questions].sort((a, b) => {
+    const areaA = ENEM_AREA_ORDER.indexOf(
+      (a.subject?.area ?? '') as (typeof ENEM_AREA_ORDER)[number],
+    )
+    const areaB = ENEM_AREA_ORDER.indexOf(
+      (b.subject?.area ?? '') as (typeof ENEM_AREA_ORDER)[number],
+    )
+    if (areaA !== areaB) return areaA - areaB
+    const nameCompare = (a.subject?.name ?? '').localeCompare(b.subject?.name ?? '')
+    if (nameCompare !== 0) return nameCompare
+    return a.year - b.year
+  })
 }

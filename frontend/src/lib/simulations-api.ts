@@ -1,8 +1,10 @@
 import type {
   EnemArea,
+  EnemSubject,
   EnemYear,
   SimulationDetailResponse,
   SimulationHistoryItem,
+  StartSimulationPayload,
   StartSimulationResponse,
   SubmitSimulationResponse,
 } from '../types/simulation'
@@ -53,6 +55,16 @@ export async function fetchEnemAreas(token: string, year: number): Promise<EnemA
   return response.json() as Promise<EnemArea[]>
 }
 
+export async function fetchEnemSubjects(token: string, year: number): Promise<EnemSubject[]> {
+  const response = await authFetch(`/api/enem/subjects?year=${year}`, token)
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao carregar matérias')
+  }
+
+  return response.json() as Promise<EnemSubject[]>
+}
+
 export async function fetchSimulationHistory(
   token: string,
 ): Promise<SimulationHistoryItem[]> {
@@ -67,7 +79,7 @@ export async function fetchSimulationHistory(
 
 export async function startSimulation(
   token: string,
-  payload: { examYear: number; subjectArea: string; questionCount: number },
+  payload: StartSimulationPayload,
 ): Promise<StartSimulationResponse> {
   const response = await authFetch('/api/simulations/start', token, {
     method: 'POST',
@@ -98,10 +110,11 @@ export async function submitSimulation(
   token: string,
   attemptId: string,
   answers: { questionId: string; selectedOption: string }[],
+  elapsedSeconds: number,
 ): Promise<SubmitSimulationResponse> {
   const response = await authFetch(`/api/simulations/${attemptId}/submit`, token, {
     method: 'POST',
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, elapsedSeconds }),
   })
 
   if (!response.ok) {

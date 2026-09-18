@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { QuestionCard } from '../../components/simulation/QuestionCard'
+import {
+  getElapsedSeconds,
+  SimulationTimer,
+} from '../../components/simulation/SimulationTimer'
 import { useAuth } from '../../contexts/AuthContext'
 import { fetchSimulation, submitSimulation } from '../../lib/simulations-api'
-import type { SimulationQuestion } from '../../types/simulation'
+import type { SimulationAttempt, SimulationQuestion } from '../../types/simulation'
 
 type QuizLocationState = {
   questions?: SimulationQuestion[]
+  attempt?: SimulationAttempt
 }
 
 export function SimulationQuizPage() {
@@ -16,18 +21,23 @@ export function SimulationQuizPage() {
   const { session } = useAuth()
   const token = session?.access_token ?? ''
 
-  const cachedQuestions = (location.state as QuizLocationState | null)?.questions
+  const locationState = location.state as QuizLocationState | null
+  const cachedQuestions = locationState?.questions
+  const cachedAttempt = locationState?.attempt
 
+  const [attempt, setAttempt] = useState<SimulationAttempt | null>(cachedAttempt ?? null)
   const [questions, setQuestions] = useState<SimulationQuestion[]>(cachedQuestions ?? [])
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(!cachedQuestions?.length)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const expiredRef = useRef(false)
+  const startedAtRef = useRef(cachedAttempt?.started_at ?? new Date().toISOString())
 
   useEffect(() => {
     if (!token || !attemptId) return
-    if (cachedQuestions?.length) return
+    if (cachedQuestions?.length && cachedAttempt) return
 
     fetchSimulation(token, attemptId)
       .then((data) => {
@@ -40,39 +50,56 @@ export function SimulationQuizPage() {
           throw new Error('Questões não encontradas para este simulado')
         }
 
+        setAttempt(data.attempt)
         setQuestions(data.questions)
+        startedAtRef.current = data.attempt.started_at
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : 'Erro ao carregar simulado'),
       )
       .finally(() => setLoading(false))
-  }, [token, attemptId, navigate, cachedQuestions])
+  }, [token, attemptId, navigate, cachedQuestions, cachedAttempt])
+
+  const submitAnswers = useCallback(
+    async (force = false) => {
+      if (!attemptId || submitting) return
+      if (!force && Object.keys(answers).length !== questions.length) return
+
+      setSubmitting(true)
+      setError(null)
+
+      try {
+        const payload = questions
+          .filter((q) => answers[q.id])
+          .map((q) => ({
+            questionId: q.id,
+            selectedOption: answers[q.id],
+          }))
+
+        await submitSimulation(
+          token,
+          attemptId,
+          payload,
+          getElapsedSeconds(startedAtRef.current),
+        )
+        navigate(`/simulados/${attemptId}/resultado`)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao enviar simulado')
+        setSubmitting(false)
+      }
+    },
+    [attemptId, submitting, answers, questions, token, navigate],
+  )
+
+  const handleExpire = useCallback(() => {
+    if (expiredRef.current) return
+    expiredRef.current = true
+    void submitAnswers(true)
+  }, [submitAnswers])
 
   const currentQuestion = questions[currentIndex]
   const answeredCount = Object.keys(answers).length
   const allAnswered = questions.length > 0 && answeredCount === questions.length
-
-  async function handleSubmit() {
-    if (!attemptId || !allAnswered) return
-
-    setSubmitting(true)
-    setError(null)
-
-    try {
-      await submitSimulation(
-        token,
-        attemptId,
-        questions.map((q) => ({
-          questionId: q.id,
-          selectedOption: answers[q.id],
-        })),
-      )
-      navigate(`/simulados/${attemptId}/resultado`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao enviar simulado')
-      setSubmitting(false)
-    }
-  }
 
   if (loading) {
     return <p className="text-slate-400">Carregando questões...</p>
@@ -102,9 +129,18 @@ export function SimulationQuizPage() {
             {answeredCount} respondida{answeredCount !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link to="/simulados" className="text-sm text-slate-400 hover:text-white">
-          Cancelar
-        </Link>
+        <div className="flex items-center gap-3">
+          {attempt?.time_limit_seconds && (
+            <SimulationTimer
+              startedAt={startedAtRef.current}
+              timeLimitSeconds={attempt.time_limit_seconds}
+              onExpire={handleExpire}
+            />
+          )}
+          <Link to="/simulados" className="text-sm text-slate-400 hover:text-white">
+            Cancelar
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
@@ -150,7 +186,7 @@ export function SimulationQuizPage() {
           <button
             type="button"
             disabled={!allAnswered || submitting}
-            onClick={handleSubmit}
+            onClick={() => void submitAnswers()}
             className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
           >
             {submitting ? 'Enviando...' : 'Finalizar simulado'}
