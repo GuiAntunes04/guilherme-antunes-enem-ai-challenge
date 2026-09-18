@@ -95,6 +95,19 @@ Após configurar o `.env`, aplique a migration inicial:
 
 Instruções detalhadas em [`supabase/README.md`](supabase/README.md).
 
+### Índice de questões (sync único)
+
+Após aplicar as migrations, sincronize os metadados das questões EnemHub para o Supabase:
+
+```bash
+cd backend
+npm run sync:questions
+```
+
+Isso indexa ~4.800 questões (id, ano, matéria, área, dificuldade). O conteúdo completo (`statement`, alternativas) continua sendo buscado na EnemHub sob demanda.
+
+Alternativa via API (autenticado): `POST /api/enem/sync`
+
 ### Testar autenticação (após Fase 2)
 
 Com um JWT válido do Supabase Auth:
@@ -125,7 +138,7 @@ Principais endpoints utilizados:
 
 Documentação: [docs.enemhub.com.br](https://docs.enemhub.com.br/enem/exemplos)
 
-> Plano Free: 5.000 requisições/mês. O backend faz cache em memória e retry automático em `429`.
+> Plano Free: 5.000 requisições/mês. Metadados ficam no Supabase (`enem_questions_index`); o sync consome ~50 requests uma única vez. Durante simulados, só se busca o conteúdo das questões selecionadas.
 
 ## Licença
 
