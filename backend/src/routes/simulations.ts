@@ -15,7 +15,7 @@ import {
 } from '../services/enemhub-api.js'
 
 import { QuestionIndexNotSyncedError } from '../services/question-index.js'
-import { buildSimulation, isValidMode } from '../services/simulation-builder.js'
+import { isValidMode, planSimulation } from '../services/simulation-builder.js'
 
 import {
   LEGACY_SIMULATION_MODE_LABELS,
@@ -30,7 +30,7 @@ import type { StartSimulationBody } from '../types/simulation.js'
 
 export const simulationsRouter = Router()
 
-
+const QUESTION_LOAD_BATCH_SIZE = 8
 
 simulationsRouter.use(requireAuth)
 
@@ -131,6 +131,58 @@ simulationsRouter.get('/', async (req, res) => {
 
 
 
+simulationsRouter.get('/:id/questions', async (req, res) => {
+  const userId = req.user!.id
+  const attemptId = req.params.id
+  const from = Math.max(0, Number(req.query.from ?? 0))
+  const count = Math.min(
+    Math.max(1, Number(req.query.count ?? QUESTION_LOAD_BATCH_SIZE)),
+    12,
+  )
+
+  const { data: attempt, error } = await supabaseAdmin
+    .from('simulation_attempts')
+    .select('id, question_ids, mode, finished_at')
+    .eq('id', attemptId)
+    .eq('user_id', userId)
+    .single()
+
+  if (error || !attempt) {
+    res.status(404).json({ error: 'Simulation not found' })
+    return
+  }
+
+  const questionIds = (attempt.question_ids as string[] | null) ?? []
+  const batchIds = questionIds.slice(from, from + count)
+
+  if (batchIds.length === 0) {
+    res.json({ questions: [], total: questionIds.length, from })
+    return
+  }
+
+  try {
+    const hubQuestions = await fetchQuestionsByIds(batchIds)
+    cacheQuestions(hubQuestions)
+
+    const questionMap = new Map(hubQuestions.map((question) => [question.id, question]))
+    const orderedQuestions = batchIds.flatMap((id: string) => {
+      const question = questionMap.get(id)
+      return question ? [question] : []
+    })
+
+    res.json({
+      questions: orderedQuestions.map(sanitizeQuestion),
+      total: questionIds.length,
+      from,
+    })
+  } catch (loadError) {
+    res.status(502).json({
+      error: 'Failed to load questions',
+      message: loadError instanceof Error ? loadError.message : 'Unknown error',
+    })
+  }
+})
+
 simulationsRouter.get('/:id', async (req, res) => {
 
   const userId = req.user!.id
@@ -179,7 +231,7 @@ simulationsRouter.get('/:id', async (req, res) => {
 
 
 
-  if (attempt.question_ids?.length) {
+  if (attempt.finished_at && attempt.question_ids?.length) {
 
     try {
 
@@ -275,13 +327,9 @@ simulationsRouter.post('/start', async (req, res) => {
 
   try {
 
-    const built = await buildSimulation(body)
+    const planned = await planSimulation(body, { userId })
 
-    const questionIds = built.questions.map((q) => q.id)
-
-    cacheQuestions(built.questions)
-
-
+    const questionIds = planned.questionIds
 
     const { data: attempt, error } = await supabaseAdmin
 
@@ -291,23 +339,23 @@ simulationsRouter.post('/start', async (req, res) => {
 
         user_id: userId,
 
-        exam_year: built.examYear,
+        exam_year: planned.examYear,
 
-        discipline: built.discipline,
+        discipline: planned.discipline,
 
         mode: body.mode,
 
-        years_used: built.yearsUsed,
+        years_used: planned.yearsUsed,
 
-        subject_id: built.subjectId,
+        subject_id: planned.subjectId,
 
         score: 0,
 
-        total: built.questions.length,
+        total: questionIds.length,
 
         question_ids: questionIds,
 
-        time_limit_seconds: built.timeLimitSeconds,
+        time_limit_seconds: planned.timeLimitSeconds,
 
       })
 
@@ -343,7 +391,7 @@ simulationsRouter.post('/start', async (req, res) => {
 
       },
 
-      questions: built.questions.map(sanitizeQuestion),
+      questions: [],
 
     })
 
@@ -353,7 +401,9 @@ simulationsRouter.post('/start', async (req, res) => {
 
     let status = 502
     if (error instanceof QuestionIndexNotSyncedError) status = 503
-    else if (message.startsWith('No questions')) status = 404
+    else if (message.startsWith('No questions') || message.startsWith('Nenhuma questão')) {
+      status = 404
+    }
 
     res.status(status).json({
 

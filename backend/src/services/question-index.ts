@@ -3,7 +3,8 @@ import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { EnemHubArea, EnemHubSubjectOption } from '../types/enemhub.js'
 import type { QuestionIndexEntry } from '../types/question-index.js'
 import {
-  getSubjectNamesForKnowledgeArea,
+  getKnowledgeAreasForDay,
+  getSubjectQuotasForArea,
   resolveKnowledgeAreaFromSubject,
   type EnemKnowledgeArea,
 } from '../lib/enem-knowledge-areas.js'
@@ -278,26 +279,6 @@ export function sortIndexLikeEnem(entries: QuestionIndexEntry[]): QuestionIndexE
   })
 }
 
-export function pickFromIndex(
-  entries: QuestionIndexEntry[],
-  count: number,
-  ordered: boolean,
-): QuestionIndexEntry[] {
-  const picked = shuffleAndPick(entries, Math.min(count, entries.length))
-  return ordered ? sortIndexWithinArea(picked) : picked
-}
-
-export async function pickQuestionIdsByKnowledgeArea(
-  year: number,
-  knowledgeArea: EnemKnowledgeArea,
-  count: number,
-  ordered: boolean,
-): Promise<string[]> {
-  const subjectNames = getSubjectNamesForKnowledgeArea(knowledgeArea)
-  const entries = await queryIndexEntries({ year, subjectNames })
-  return pickFromIndex(entries, count, ordered).map((entry) => entry.id)
-}
-
 function resolveSubjectPracticeLimit(
   requested: number | null,
   available: number,
@@ -332,23 +313,126 @@ export async function pickQuestionIdsBySubjectArea(
   }
 }
 
-export async function pickQuestionIdsForDay(
-  year: number,
-  areas: EnemKnowledgeArea[],
-  countPerArea: number,
-): Promise<{ ids: string[]; missingAreas: EnemKnowledgeArea[] }> {
-  const ids: string[] = []
-  const missingAreas: EnemKnowledgeArea[] = []
+const DAY_SIMULATION_MAX_RETRIES = 15
 
-  for (const area of areas) {
-    const block = await pickQuestionIdsByKnowledgeArea(year, area, countPerArea, true)
-    if (block.length === 0) {
-      missingAreas.push(area)
-    }
-    ids.push(...block)
+function questionSetSignature(ids: string[]): string {
+  return [...ids].sort().join('|')
+}
+
+export async function getUserDaySimulationSignatures(
+  userId: string,
+  mode: 'day_one' | 'day_two',
+): Promise<Set<string>> {
+  const { data, error } = await supabaseAdmin
+    .from('simulation_attempts')
+    .select('question_ids')
+    .eq('user_id', userId)
+    .eq('mode', mode)
+
+  if (error) {
+    throw new Error(`Failed to load previous day simulations: ${error.message}`)
   }
 
-  return { ids, missingAreas }
+  const signatures = new Set<string>()
+
+  for (const row of data ?? []) {
+    const ids = row.question_ids as string[] | null
+    if (ids?.length) {
+      signatures.add(questionSetSignature(ids))
+    }
+  }
+
+  return signatures
+}
+
+async function loadSubjectPoolsForArea(
+  area: EnemKnowledgeArea,
+): Promise<Map<string, QuestionIndexEntry[]>> {
+  const quotas = getSubjectQuotasForArea(area)
+  const subjectNames = Object.keys(quotas)
+  const entries = await queryIndexEntries({ subjectNames })
+  const pools = new Map<string, QuestionIndexEntry[]>()
+
+  for (const name of subjectNames) {
+    pools.set(
+      name,
+      entries.filter(
+        (entry) =>
+          entry.subject_name === name &&
+          resolveKnowledgeAreaFromSubject(entry.subject_name) === area,
+      ),
+    )
+  }
+
+  return pools
+}
+
+async function pickDaySimulationEntries(
+  mode: 'day_one' | 'day_two',
+): Promise<{ entries: QuestionIndexEntry[]; missingSubjects: string[] }> {
+  const areas = getKnowledgeAreasForDay(mode)
+  const picked: QuestionIndexEntry[] = []
+  const missingSubjects: string[] = []
+
+  for (const area of areas) {
+    const quotas = getSubjectQuotasForArea(area)
+    const areaTarget = Object.values(quotas).reduce((sum, quota) => sum + quota, 0)
+    const pools = await loadSubjectPoolsForArea(area)
+    const areaPicked: QuestionIndexEntry[] = []
+    const remaining: QuestionIndexEntry[] = []
+
+    for (const [subjectName, quota] of Object.entries(quotas)) {
+      const available = pools.get(subjectName) ?? []
+      const selected = shuffleAndPick(available, Math.min(quota, available.length))
+      areaPicked.push(...selected)
+
+      const selectedIds = new Set(selected.map((entry) => entry.id))
+      remaining.push(...available.filter((entry) => !selectedIds.has(entry.id)))
+    }
+
+    if (areaPicked.length < areaTarget) {
+      const need = areaTarget - areaPicked.length
+      const filler = shuffleAndPick(remaining, Math.min(need, remaining.length))
+      areaPicked.push(...filler)
+
+      if (areaPicked.length < areaTarget) {
+        missingSubjects.push(
+          `${area} (${areaPicked.length}/${areaTarget} questões no índice)`,
+        )
+      }
+    }
+
+    picked.push(...areaPicked)
+  }
+
+  return { entries: sortIndexLikeEnem(picked), missingSubjects }
+}
+
+export async function pickQuestionIdsForDaySimulation(
+  mode: 'day_one' | 'day_two',
+  userId: string,
+): Promise<{ ids: string[]; yearsUsed: number[]; missingSubjects: string[] }> {
+  const usedSignatures = await getUserDaySimulationSignatures(userId, mode)
+
+  for (let attempt = 0; attempt < DAY_SIMULATION_MAX_RETRIES; attempt += 1) {
+    const { entries, missingSubjects } = await pickDaySimulationEntries(mode)
+    const ids = entries.map((entry) => entry.id)
+
+    if (ids.length === 0) {
+      return { ids: [], yearsUsed: [], missingSubjects }
+    }
+
+    const signature = questionSetSignature(ids)
+
+    if (!usedSignatures.has(signature)) {
+      const yearsUsed = [...new Set(entries.map((entry) => entry.year))].sort((a, b) => b - a)
+      return { ids, yearsUsed, missingSubjects }
+    }
+  }
+
+  throw new Error(
+    'Não foi possível montar um simulado diferente dos anteriores. Tente novamente.',
+  )
 }
 
 export { AVAILABLE_YEARS }

@@ -1,12 +1,14 @@
+import { getDaySimulationQuestionTarget } from '../lib/enem-knowledge-areas.js'
 import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
-import { getKnowledgeAreasForDay } from '../lib/enem-knowledge-areas.js'
-import { QUESTIONS_PER_AREA, TIME_DAY_SECONDS } from '../types/simulation.js'
 import { fetchQuestionsByIds, sortLikeEnem } from './enemhub-api.js'
-import { pickQuestionIdsBySubjectArea, pickQuestionIdsForDay } from './question-index.js'
+import {
+  pickQuestionIdsBySubjectArea,
+  pickQuestionIdsForDaySimulation,
+} from './question-index.js'
 
-export type BuiltSimulation = {
-  questions: EnemHubQuestion[]
+export type PlannedSimulation = {
+  questionIds: string[]
   examYear: number | null
   yearsUsed: number[]
   discipline: string
@@ -14,18 +16,11 @@ export type BuiltSimulation = {
   timeLimitSeconds: number | null
 }
 
-async function resolveQuestionsInOrder(ids: string[]): Promise<EnemHubQuestion[]> {
-  const hubQuestions = await fetchQuestionsByIds(ids)
-  const questionMap = new Map(hubQuestions.map((q) => [q.id, q]))
-  return ids.flatMap((id) => {
-    const question = questionMap.get(id)
-    return question ? [question] : []
-  })
+export type BuildSimulationOptions = {
+  userId?: string
 }
 
-function resolveTimeLimitSeconds(
-  body: StartSimulationBody,
-): number | null {
+function resolveTimeLimitSeconds(body: StartSimulationBody): number | null {
   const value = body.timeLimitSeconds
   if (value === null || value === undefined || value <= 0) {
     return null
@@ -33,9 +28,10 @@ function resolveTimeLimitSeconds(
   return value
 }
 
-export async function buildSimulation(
+export async function planSimulation(
   body: StartSimulationBody,
-): Promise<BuiltSimulation> {
+  options: BuildSimulationOptions = {},
+): Promise<PlannedSimulation> {
   const mode = body.mode ?? 'subject_practice'
 
   switch (mode) {
@@ -60,13 +56,11 @@ export async function buildSimulation(
       )
 
       if (ids.length === 0) {
-        throw new Error('No questions found for this subject area')
+        throw new Error('Nenhuma questão encontrada para este tópico')
       }
 
-      const questions = await resolveQuestionsInOrder(ids)
-
       return {
-        questions,
+        questionIds: ids,
         examYear: null,
         yearsUsed,
         discipline: subjectArea,
@@ -77,43 +71,58 @@ export async function buildSimulation(
 
     case 'day_one':
     case 'day_two': {
-      const examYear = Number(body.examYear)
-      if (!examYear) {
-        throw new Error('examYear is required')
+      if (!options.userId) {
+        throw new Error('userId is required for day simulations')
       }
 
-      const areas = getKnowledgeAreasForDay(mode)
-      const { ids, missingAreas } = await pickQuestionIdsForDay(
-        examYear,
-        areas,
-        QUESTIONS_PER_AREA,
+      const { ids, yearsUsed, missingSubjects } = await pickQuestionIdsForDaySimulation(
+        mode,
+        options.userId,
       )
 
+      const questionTarget = getDaySimulationQuestionTarget(mode)
+
       if (ids.length === 0) {
-        throw new Error('No questions found for this exam day and year')
+        throw new Error('Nenhuma questão encontrada para este dia de prova')
       }
 
-      if (missingAreas.length > 0) {
+      if (missingSubjects.length > 0 || ids.length < questionTarget) {
         throw new Error(
-          `Not enough questions for ENEM ${examYear}: missing ${missingAreas.join(', ')}`,
+          `Questões insuficientes para um simulado completo (${ids.length}/${questionTarget}): ${missingSubjects.join(', ')}`,
         )
       }
 
-      const questions = sortLikeEnem(await resolveQuestionsInOrder(ids))
-
       return {
-        questions,
-        examYear,
-        yearsUsed: [examYear],
+        questionIds: ids,
+        examYear: null,
+        yearsUsed,
         discipline: mode === 'day_one' ? '1º dia ENEM' : '2º dia ENEM',
         subjectId: null,
-        timeLimitSeconds: TIME_DAY_SECONDS,
+        timeLimitSeconds: resolveTimeLimitSeconds(body),
       }
     }
 
     default:
       throw new Error('Invalid simulation mode')
   }
+}
+
+export async function loadSimulationQuestions(
+  questionIds: string[],
+  mode: SimulationMode,
+): Promise<EnemHubQuestion[]> {
+  const hubQuestions = await fetchQuestionsByIds(questionIds)
+  const questionMap = new Map(hubQuestions.map((question) => [question.id, question]))
+  const ordered = questionIds.flatMap((id) => {
+    const question = questionMap.get(id)
+    return question ? [question] : []
+  })
+
+  if (mode === 'day_one' || mode === 'day_two') {
+    return sortLikeEnem(ordered)
+  }
+
+  return ordered
 }
 
 export function isValidMode(mode: string): mode is SimulationMode {

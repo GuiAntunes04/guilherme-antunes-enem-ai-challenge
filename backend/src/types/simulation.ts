@@ -43,6 +43,6 @@ export type StartSimulationBody = {
   subjectArea?: string
   /** Omit or null = all questions for the subject area */
   questionCount?: number | null
-  /** null or 0 = unlimited (subject practice only) */
+  /** null or 0 = unlimited */
   timeLimitSeconds?: number | null
 }

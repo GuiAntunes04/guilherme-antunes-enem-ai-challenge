@@ -8,9 +8,9 @@ import { resolveKnowledgeAreaFromSubject } from '../lib/enem-knowledge-areas.js'
 import { ENEM_AREA_ORDER } from '../types/simulation.js'
 
 const BASE_URL = 'https://api.enemhub.com.br/v1/enem/questions'
-const MAX_RETRIES = 5
-const FETCH_CONCURRENCY = 4
-const FETCH_BATCH_DELAY_MS = 250
+const MAX_RETRIES = 8
+/** Pause between sequential EnemHub question fetches to avoid rate limits. */
+const REQUEST_SPACING_MS = 350
 
 const questionCache = new Map<string, EnemHubQuestion>()
 
@@ -35,7 +35,8 @@ async function enemhubFetch(url: string): Promise<Response> {
 
     if (response.status === 429) {
       const retryAfter = Number(response.headers.get('Retry-After') ?? 5)
-      await sleep(Math.min(retryAfter, 15) * 1000)
+      const backoffMs = Math.min(retryAfter * Math.pow(1.5, attempt), 30) * 1000
+      await sleep(backoffMs)
       continue
     }
 
@@ -77,19 +78,17 @@ export async function fetchQuestionById(id: string): Promise<EnemHubQuestion> {
 
 export async function fetchQuestionsByIds(ids: string[]): Promise<EnemHubQuestion[]> {
   const uniqueIds = [...new Set(ids)]
-  const results: EnemHubQuestion[] = []
+  const resultMap = new Map<string, EnemHubQuestion>()
 
-  for (let offset = 0; offset < uniqueIds.length; offset += FETCH_CONCURRENCY) {
-    const batch = uniqueIds.slice(offset, offset + FETCH_CONCURRENCY)
-    const batchResults = await Promise.all(batch.map((id) => fetchQuestionById(id)))
-    results.push(...batchResults)
+  for (let index = 0; index < uniqueIds.length; index += 1) {
+    const id = uniqueIds[index]
+    resultMap.set(id, await fetchQuestionById(id))
 
-    if (offset + FETCH_CONCURRENCY < uniqueIds.length) {
-      await sleep(FETCH_BATCH_DELAY_MS)
+    if (index < uniqueIds.length - 1) {
+      await sleep(REQUEST_SPACING_MS)
     }
   }
 
-  const resultMap = new Map(results.map((question) => [question.id, question]))
   return ids.flatMap((id) => {
     const question = resultMap.get(id)
     return question ? [question] : []

@@ -48,3 +48,44 @@ export function getKnowledgeAreasForDay(mode: 'day_one' | 'day_two'): EnemKnowle
     ? ([...DAY_ONE_AREAS] as EnemKnowledgeArea[])
     : ([...DAY_TWO_AREAS] as EnemKnowledgeArea[])
 }
+
+/**
+ * Official-like question counts per subject within each ENEM knowledge area (45 each).
+ * EnemHub may omit some disciplines (e.g. Educação Física); shortfalls are filled from
+ * other subjects in the same area during day simulation assembly.
+ */
+export const ENEM_SUBJECT_QUOTAS: Record<EnemKnowledgeArea, Record<string, number>> = {
+  'Linguagens, Códigos e suas Tecnologias': {
+    Português: 27,
+    Literatura: 6,
+    Inglês: 4,
+    Espanhol: 4,
+    Artes: 2,
+    'Educação Física': 2,
+  },
+  'Ciências Humanas e suas Tecnologias': {
+    História: 12,
+    Geografia: 12,
+    Filosofia: 10,
+    Sociologia: 11,
+  },
+  'Ciências da Natureza e suas Tecnologias': {
+    Biologia: 18,
+    Física: 14,
+    Química: 13,
+  },
+  'Matemática e suas Tecnologias': {
+    Matemática: 45,
+  },
+}
+
+export function getSubjectQuotasForArea(area: EnemKnowledgeArea): Record<string, number> {
+  return { ...ENEM_SUBJECT_QUOTAS[area] }
+}
+
+export function getDaySimulationQuestionTarget(mode: 'day_one' | 'day_two'): number {
+  return getKnowledgeAreasForDay(mode).reduce((total, area) => {
+    const quotas = getSubjectQuotasForArea(area)
+    return total + Object.values(quotas).reduce((sum, quota) => sum + quota, 0)
+  }, 0)
+}
