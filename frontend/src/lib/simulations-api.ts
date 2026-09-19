@@ -1,4 +1,5 @@
 import type {
+  BeginSimulationResponse,
   EnemSubjectArea,
   SimulationDetailResponse,
   SimulationHistoryItem,
@@ -108,6 +109,21 @@ export async function startSimulation(
   }
 
   return response.json() as Promise<StartSimulationResponse>
+}
+
+export async function beginSimulationQuiz(
+  token: string,
+  attemptId: string,
+): Promise<BeginSimulationResponse> {
+  const response = await authFetch(`/api/simulations/${attemptId}/begin`, token, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao iniciar cronômetro do simulado')
+  }
+
+  return response.json() as Promise<BeginSimulationResponse>
 }
 
 export async function fetchSimulationQuestionBatch(

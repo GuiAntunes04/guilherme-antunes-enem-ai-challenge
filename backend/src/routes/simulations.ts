@@ -77,7 +77,46 @@ function formatAttemptTitle(attempt: Record<string, unknown>): string {
 
 }
 
+const ATTEMPT_TIMER_FIELDS =
+  'id, exam_year, discipline, mode, years_used, score, total, started_at, quiz_started_at, time_limit_seconds, finished_at, elapsed_seconds'
 
+function mapAttemptRow(attempt: Record<string, unknown>) {
+  return {
+    ...attempt,
+    disciplineLabel: formatAttemptLabel(attempt),
+    attemptTitle: formatAttemptTitle(attempt),
+  }
+}
+
+function computeElapsedSeconds(
+  attempt: {
+    started_at: string
+    quiz_started_at?: string | null
+    time_limit_seconds?: number | null
+  },
+  clientElapsedSeconds: number,
+): number | null {
+  const timerStart = attempt.quiz_started_at ?? attempt.started_at
+  const serverElapsed = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(timerStart).getTime()) / 1000),
+  )
+
+  const elapsed =
+    attempt.quiz_started_at != null
+      ? serverElapsed
+      : clientElapsedSeconds > 0
+        ? clientElapsedSeconds
+        : serverElapsed
+
+  if (!elapsed) return null
+
+  if (attempt.time_limit_seconds && elapsed > 0) {
+    return Math.min(elapsed, attempt.time_limit_seconds + 30)
+  }
+
+  return elapsed
+}
 
 simulationsRouter.get('/', async (req, res) => {
 
@@ -359,11 +398,7 @@ simulationsRouter.post('/start', async (req, res) => {
 
       })
 
-      .select(
-
-        'id, exam_year, discipline, mode, years_used, total, started_at, time_limit_seconds',
-
-      )
+      .select(ATTEMPT_TIMER_FIELDS)
 
       .single()
 
@@ -381,15 +416,7 @@ simulationsRouter.post('/start', async (req, res) => {
 
     res.status(201).json({
 
-      attempt: {
-
-        ...attempt,
-
-        disciplineLabel: formatAttemptLabel(attempt),
-
-        attemptTitle: formatAttemptTitle(attempt),
-
-      },
+      attempt: mapAttemptRow(attempt),
 
       questions: [],
 
@@ -417,7 +444,79 @@ simulationsRouter.post('/start', async (req, res) => {
 
 })
 
+simulationsRouter.post('/:id/begin', async (req, res) => {
+  const userId = req.user!.id
+  const attemptId = req.params.id
 
+  const { data: attempt, error } = await supabaseAdmin
+    .from('simulation_attempts')
+    .select('id, user_id, finished_at, quiz_started_at')
+    .eq('id', attemptId)
+    .eq('user_id', userId)
+    .single()
+
+  if (error || !attempt) {
+    res.status(404).json({ error: 'Simulation not found' })
+    return
+  }
+
+  if (attempt.finished_at) {
+    res.status(400).json({ error: 'Simulation already finished' })
+    return
+  }
+
+  if (attempt.quiz_started_at) {
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('simulation_attempts')
+      .select(ATTEMPT_TIMER_FIELDS)
+      .eq('id', attemptId)
+      .eq('user_id', userId)
+      .single()
+
+    if (existingError || !existing) {
+      res.status(500).json({ error: 'Failed to load simulation', message: existingError?.message })
+      return
+    }
+
+    res.json({ attempt: mapAttemptRow(existing) })
+    return
+  }
+
+  const now = new Date().toISOString()
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('simulation_attempts')
+    .update({ quiz_started_at: now })
+    .eq('id', attemptId)
+    .eq('user_id', userId)
+    .is('quiz_started_at', null)
+    .select(ATTEMPT_TIMER_FIELDS)
+    .maybeSingle()
+
+  if (updateError) {
+    res.status(500).json({ error: 'Failed to start quiz timer', message: updateError.message })
+    return
+  }
+
+  if (updated) {
+    res.json({ attempt: mapAttemptRow(updated) })
+    return
+  }
+
+  const { data: raced, error: racedError } = await supabaseAdmin
+    .from('simulation_attempts')
+    .select(ATTEMPT_TIMER_FIELDS)
+    .eq('id', attemptId)
+    .eq('user_id', userId)
+    .single()
+
+  if (racedError || !raced) {
+    res.status(500).json({ error: 'Failed to start quiz timer', message: racedError?.message })
+    return
+  }
+
+  res.json({ attempt: mapAttemptRow(raced) })
+})
 
 simulationsRouter.post('/:id/submit', async (req, res) => {
 
@@ -511,13 +610,7 @@ simulationsRouter.post('/:id/submit', async (req, res) => {
 
     const score = gradedAnswers.filter((a) => a.is_correct).length
 
-    const cappedElapsed =
-
-      attempt.time_limit_seconds && elapsedSeconds > 0
-
-        ? Math.min(elapsedSeconds, attempt.time_limit_seconds + 30)
-
-        : elapsedSeconds || null
+    const cappedElapsed = computeElapsedSeconds(attempt, elapsedSeconds)
 
 
 
@@ -555,11 +648,7 @@ simulationsRouter.post('/:id/submit', async (req, res) => {
 
       .eq('id', attemptId)
 
-      .select(
-
-        'id, exam_year, discipline, mode, years_used, score, total, started_at, finished_at, elapsed_seconds, time_limit_seconds',
-
-      )
+      .select(ATTEMPT_TIMER_FIELDS)
 
       .single()
 
@@ -577,15 +666,7 @@ simulationsRouter.post('/:id/submit', async (req, res) => {
 
     res.json({
 
-      attempt: {
-
-        ...updated,
-
-        disciplineLabel: formatAttemptLabel(updated),
-
-        attemptTitle: formatAttemptTitle(updated),
-
-      },
+      attempt: mapAttemptRow(updated),
 
       answers: gradedAnswers.map((a) => ({
 

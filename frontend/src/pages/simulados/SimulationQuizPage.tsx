@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { QuestionCard } from '../../components/simulation/QuestionCard'
-import { TutorChatPanel } from '../../components/tutor/TutorChatPanel'
 import {
+  formatTime,
   getElapsedSeconds,
   SimulationTimer,
 } from '../../components/simulation/SimulationTimer'
+import { TutorChatPanel } from '../../components/tutor/TutorChatPanel'
 import { useAuth } from '../../contexts/AuthContext'
 import {
+  beginSimulationQuiz,
   fetchSimulation,
   fetchSimulationQuestionBatch,
   submitSimulation,
@@ -36,6 +38,10 @@ function useMediaQuery(query: string): boolean {
   return matches
 }
 
+function getQuizTimerStartedAt(attempt: SimulationAttempt): string | null {
+  return attempt.quiz_started_at ?? null
+}
+
 export function SimulationQuizPage() {
   const { attemptId } = useParams<{ attemptId: string }>()
   const location = useLocation()
@@ -52,33 +58,60 @@ export function SimulationQuizPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(!cachedQuestions?.length)
-  const [loadProgress, setLoadProgress] = useState({ loaded: cachedQuestions?.length ?? 0, total: cachedAttempt?.total ?? 0 })
+  const [loadProgress, setLoadProgress] = useState({
+    loaded: cachedQuestions?.length ?? 0,
+    total: cachedAttempt?.total ?? 0,
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [quizStartedAt, setQuizStartedAt] = useState<string | null>(
+    cachedAttempt ? getQuizTimerStartedAt(cachedAttempt) : null,
+  )
   const expiredRef = useRef(false)
-  const startedAtRef = useRef(cachedAttempt?.started_at ?? new Date().toISOString())
+  const quizStartedAtRef = useRef<string | null>(quizStartedAt)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   useEffect(() => {
+    quizStartedAtRef.current = quizStartedAt
+  }, [quizStartedAt])
+
+  useEffect(() => {
     if (!token || !attemptId) return
-    if (cachedQuestions?.length) return
 
     let cancelled = false
 
-    async function loadQuestions() {
+    async function ensureQuizStarted(modeAttempt: SimulationAttempt): Promise<string> {
+      const existing = getQuizTimerStartedAt(modeAttempt)
+      if (existing) {
+        setQuizStartedAt(existing)
+        return existing
+      }
+
+      const { attempt: begun } = await beginSimulationQuiz(token, attemptId!)
+      if (cancelled) return begun.quiz_started_at ?? begun.started_at
+
+      setAttempt(begun)
+      const startedAt = begun.quiz_started_at ?? begun.started_at
+      setQuizStartedAt(startedAt)
+      return startedAt
+    }
+
+    async function bootstrap() {
       setLoading(true)
       setError(null)
 
       try {
-        let total = cachedAttempt?.total ?? 0
-        let modeAttempt = cachedAttempt
+        let modeAttempt = cachedAttempt ?? null
 
         if (!modeAttempt) {
           const detail = await fetchSimulation(token, attemptId!)
+          if (cancelled) return
+
           if (detail.attempt.finished_at) {
             navigate(`/simulados/${attemptId}/resultado`, { replace: true })
             return
           }
+
           modeAttempt = detail.attempt
         }
 
@@ -86,31 +119,45 @@ export function SimulationQuizPage() {
           throw new Error('Simulado não encontrado')
         }
 
-        total = modeAttempt.total
         setAttempt(modeAttempt)
-        startedAtRef.current = modeAttempt.started_at
-        setLoadProgress({ loaded: 0, total })
 
-        const loadedQuestions: SimulationQuestion[] = []
-
-        for (let from = 0; from < total; from += SIMULATION_QUESTION_BATCH_SIZE) {
-          if (cancelled) return
-
-          const batch = await fetchSimulationQuestionBatch(
-            token,
-            attemptId!,
-            from,
-            SIMULATION_QUESTION_BATCH_SIZE,
-          )
-
-          loadedQuestions.push(...batch.questions)
-          setQuestions([...loadedQuestions])
-          setLoadProgress({ loaded: loadedQuestions.length, total: batch.total })
+        const resumedAt = getQuizTimerStartedAt(modeAttempt)
+        if (resumedAt) {
+          setQuizStartedAt(resumedAt)
         }
 
-        if (loadedQuestions.length === 0) {
-          throw new Error('Nenhuma questão foi carregada para este simulado')
+        if (cachedQuestions?.length) {
+          setQuestions(cachedQuestions)
+          setLoadProgress({ loaded: cachedQuestions.length, total: modeAttempt.total })
+        } else {
+          const total = modeAttempt.total
+          setLoadProgress({ loaded: 0, total })
+
+          const loadedQuestions: SimulationQuestion[] = []
+
+          for (let from = 0; from < total; from += SIMULATION_QUESTION_BATCH_SIZE) {
+            if (cancelled) return
+
+            const batch = await fetchSimulationQuestionBatch(
+              token,
+              attemptId!,
+              from,
+              SIMULATION_QUESTION_BATCH_SIZE,
+            )
+
+            loadedQuestions.push(...batch.questions)
+            setQuestions([...loadedQuestions])
+            setLoadProgress({ loaded: loadedQuestions.length, total: batch.total })
+          }
+
+          if (loadedQuestions.length === 0) {
+            throw new Error('Nenhuma questão foi carregada para este simulado')
+          }
         }
+
+        if (cancelled) return
+
+        await ensureQuizStarted(modeAttempt)
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Erro ao carregar simulado')
@@ -122,7 +169,7 @@ export function SimulationQuizPage() {
       }
     }
 
-    void loadQuestions()
+    void bootstrap()
 
     return () => {
       cancelled = true
@@ -145,19 +192,17 @@ export function SimulationQuizPage() {
             selectedOption: answers[q.id],
           }))
 
-        await submitSimulation(
-          token,
-          attemptId,
-          payload,
-          getElapsedSeconds(startedAtRef.current),
-        )
+        const timerStart = quizStartedAtRef.current ?? attempt?.started_at
+        const elapsedSeconds = timerStart ? getElapsedSeconds(timerStart) : 0
+
+        await submitSimulation(token, attemptId, payload, elapsedSeconds)
         navigate(`/simulados/${attemptId}/resultado`)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao enviar simulado')
         setSubmitting(false)
       }
     },
-    [attemptId, submitting, answers, questions, token, navigate],
+    [attemptId, submitting, answers, questions, token, navigate, attempt?.started_at],
   )
 
   const handleExpire = useCallback(() => {
@@ -170,10 +215,31 @@ export function SimulationQuizPage() {
   const answeredCount = Object.keys(answers).length
   const allAnswered = questions.length > 0 && answeredCount === questions.length
 
+  const timerPanel =
+    attempt?.time_limit_seconds && quizStartedAt ? (
+      <SimulationTimer
+        startedAt={quizStartedAt}
+        timeLimitSeconds={attempt.time_limit_seconds}
+        onExpire={handleExpire}
+      />
+    ) : attempt?.time_limit_seconds ? (
+      <div className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-mono tabular-nums text-slate-400">
+        {formatTime(attempt.time_limit_seconds)}
+      </div>
+    ) : null
+
   if (loading) {
     return (
       <div className="max-w-md space-y-3">
-        <p className="text-slate-300">Carregando questões...</p>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-slate-300">Carregando questões...</p>
+          {timerPanel}
+        </div>
+        {!quizStartedAt && attempt?.time_limit_seconds && (
+          <p className="text-xs text-slate-500">
+            O cronômetro inicia quando todas as questões estiverem prontas.
+          </p>
+        )}
         {loadProgress.total > 0 && (
           <>
             <p className="text-sm text-slate-400">
@@ -227,13 +293,7 @@ export function SimulationQuizPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {attempt?.time_limit_seconds && (
-            <SimulationTimer
-              startedAt={startedAtRef.current}
-              timeLimitSeconds={attempt.time_limit_seconds}
-              onExpire={handleExpire}
-            />
-          )}
+          {timerPanel}
           <Link to="/simulados" className="text-sm text-slate-400 hover:text-white">
             Cancelar
           </Link>

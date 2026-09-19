@@ -67,6 +67,7 @@ export type SimulationAttempt = {
   score: number
   total: number
   started_at: string
+  quiz_started_at?: string | null
   finished_at?: string | null
   time_limit_seconds?: number | null
   elapsed_seconds?: number | null
@@ -91,6 +92,10 @@ export type StartSimulationPayload = {
 export type StartSimulationResponse = {
   attempt: SimulationAttempt
   questions: SimulationQuestion[]
+}
+
+export type BeginSimulationResponse = {
+  attempt: SimulationAttempt
 }
 
 export type SimulationQuestionsBatchResponse = {

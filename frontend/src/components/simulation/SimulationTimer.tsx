@@ -6,7 +6,7 @@ type SimulationTimerProps = {
   onExpire: () => void
 }
 
-function formatTime(totalSeconds: number): string {
+export function formatTime(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
