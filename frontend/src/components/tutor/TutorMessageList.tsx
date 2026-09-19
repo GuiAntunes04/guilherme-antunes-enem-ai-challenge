@@ -1,4 +1,5 @@
 import type { TutorMessage } from '../../types/tutor'
+import { TutorMessageContent } from './TutorMessageContent'
 
 type TutorMessageListProps = {
   messages: TutorMessage[]
@@ -26,13 +27,16 @@ export function TutorMessageList({ messages, sending = false }: TutorMessageList
             className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[92%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${
+              className={`max-w-[92%] rounded-xl px-3 py-2 ${
                 isUser
                   ? 'bg-emerald-600 text-white'
                   : 'border border-slate-700 bg-slate-950 text-slate-200'
               }`}
             >
-              {message.content}
+              <TutorMessageContent
+                content={message.content}
+                variant={isUser ? 'user' : 'assistant'}
+              />
             </div>
           </div>
         )

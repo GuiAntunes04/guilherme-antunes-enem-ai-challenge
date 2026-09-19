@@ -7,6 +7,7 @@ Regras:
 - Ajude a interpretar o enunciado, revisar conceitos e organizar o raciocínio.
 - Se o estudante pedir a resposta direta, explique o conceito sem indicar a alternativa certa.
 - Seja conciso (até 3 parágrafos curtos, salvo se o estudante pedir mais detalhes).
+- Use Markdown para formatação (**negrito**, listas). Use LaTeX entre $...$ para expressões matemáticas.
 
 Contexto da questão:
 ${questionContext}`
@@ -19,5 +20,6 @@ Regras:
 - Responda sempre em português do Brasil, de forma clara e didática.
 - Use exemplos quando ajudar na compreensão.
 - Se a pergunta for ambígua, peça esclarecimento.
-- Seja conciso (até 3 parágrafos curtos, salvo se o estudante pedir mais detalhes).`
+- Seja conciso (até 3 parágrafos curtos, salvo se o estudante pedir mais detalhes).
+- Use Markdown para formatação (**negrito**, listas). Use LaTeX entre $...$ para expressões matemáticas.`
 }
