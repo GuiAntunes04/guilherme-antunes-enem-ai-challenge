@@ -66,6 +66,32 @@ async function loadSessionForUser(sessionId: string, userId: string): Promise<Tu
   return data as TutorSessionRow
 }
 
+async function findSimulationTutorSession(
+  userId: string,
+  attemptId: string,
+  questionId: string,
+): Promise<TutorSessionRow | null> {
+  const { data, error } = await supabaseAdmin
+    .from('tutor_sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('simulation_attempt_id', attemptId)
+    .eq('question_id', questionId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data as TutorSessionRow | null) ?? null
+}
+
+function isDuplicateSimulationSessionError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  if (error.code === '23505') return true
+  return error.message?.includes('tutor_sessions_attempt_question_uidx') ?? false
+}
+
 async function loadSessionMessages(sessionId: string): Promise<TutorMessageRow[]> {
   const { data, error } = await supabaseAdmin
     .from('tutor_messages')
@@ -152,41 +178,49 @@ tutorRouter.post('/sessions/simulation', async (req, res) => {
     return
   }
 
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .from('tutor_sessions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('simulation_attempt_id', attemptId)
-    .eq('question_id', questionId)
-    .maybeSingle()
+  try {
+    const existing = await findSimulationTutorSession(userId, attemptId, questionId)
+    if (existing) {
+      res.json(mapSession(existing))
+      return
+    }
 
-  if (existingError) {
-    res.status(500).json({ error: 'Failed to load tutor session', message: existingError.message })
-    return
-  }
+    const { data: created, error: createError } = await supabaseAdmin
+      .from('tutor_sessions')
+      .insert({
+        user_id: userId,
+        title: 'Dúvida no simulado',
+        simulation_attempt_id: attemptId,
+        question_id: questionId,
+      })
+      .select('*')
+      .single()
 
-  if (existing) {
-    res.json(mapSession(existing as TutorSessionRow))
-    return
-  }
+    if (createError) {
+      if (isDuplicateSimulationSessionError(createError)) {
+        const raced = await findSimulationTutorSession(userId, attemptId, questionId)
+        if (raced) {
+          res.json(mapSession(raced))
+          return
+        }
+      }
 
-  const { data: created, error: createError } = await supabaseAdmin
-    .from('tutor_sessions')
-    .insert({
-      user_id: userId,
-      title: 'Dúvida no simulado',
-      simulation_attempt_id: attemptId,
-      question_id: questionId,
+      res.status(500).json({ error: 'Failed to create tutor session', message: createError.message })
+      return
+    }
+
+    if (!created) {
+      res.status(500).json({ error: 'Failed to create tutor session' })
+      return
+    }
+
+    res.status(201).json(mapSession(created as TutorSessionRow))
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to load tutor session',
+      message: error instanceof Error ? error.message : 'Unknown error',
     })
-    .select('*')
-    .single()
-
-  if (createError || !created) {
-    res.status(500).json({ error: 'Failed to create tutor session', message: createError?.message })
-    return
   }
-
-  res.status(201).json(mapSession(created as TutorSessionRow))
 })
 
 tutorRouter.get('/sessions/:id/messages', async (req, res) => {

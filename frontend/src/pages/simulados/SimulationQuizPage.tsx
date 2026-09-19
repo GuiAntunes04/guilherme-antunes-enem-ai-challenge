@@ -20,6 +20,22 @@ type QuizLocationState = {
   attempt?: SimulationAttempt
 }
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false,
+  )
+
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    const onChange = () => setMatches(media.matches)
+    onChange()
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [query])
+
+  return matches
+}
+
 export function SimulationQuizPage() {
   const { attemptId } = useParams<{ attemptId: string }>()
   const location = useLocation()
@@ -41,6 +57,7 @@ export function SimulationQuizPage() {
   const [error, setError] = useState<string | null>(null)
   const expiredRef = useRef(false)
   const startedAtRef = useRef(cachedAttempt?.started_at ?? new Date().toISOString())
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   useEffect(() => {
     if (!token || !attemptId) return
@@ -189,6 +206,15 @@ export function SimulationQuizPage() {
 
   if (!currentQuestion) return null
 
+  const tutorPanel = (
+    <TutorChatPanel
+      mode="simulation"
+      attemptId={attemptId}
+      question={currentQuestion}
+      compact={!isDesktop}
+    />
+  )
+
   return (
     <div className="max-w-6xl">
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -267,23 +293,10 @@ export function SimulationQuizPage() {
             )}
           </div>
 
-          <div className="mt-6 lg:hidden">
-            <TutorChatPanel
-              mode="simulation"
-              attemptId={attemptId}
-              question={currentQuestion}
-              compact
-            />
-          </div>
+          {!isDesktop && <div className="mt-6">{tutorPanel}</div>}
         </div>
 
-        <div className="hidden lg:block">
-          <TutorChatPanel
-            mode="simulation"
-            attemptId={attemptId}
-            question={currentQuestion}
-          />
-        </div>
+        {isDesktop && tutorPanel}
       </div>
     </div>
   )
