@@ -1,5 +1,7 @@
 export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two'
 
+export const TIME_DAY_SECONDS = 270 * 60
+
 export const SIMULATION_MODES: { value: SimulationMode; label: string; description: string }[] = [
   {
     value: 'subject_practice',
@@ -9,16 +11,16 @@ export const SIMULATION_MODES: { value: SimulationMode; label: string; descripti
   {
     value: 'day_one',
     label: '1º dia ENEM',
-    description: '90 questões · Linguagens + Humanas · 4h30',
+    description: '90 questões · Linguagens + Humanas · multi-anos',
   },
   {
     value: 'day_two',
     label: '2º dia ENEM',
-    description: '90 questões · Natureza + Matemática · 4h30',
+    description: '90 questões · Natureza + Matemática · multi-anos',
   },
 ]
 
-export const SUBJECT_PRACTICE_TIMER_OPTIONS: {
+export const SIMULATION_TIMER_OPTIONS: {
   value: number | null
   label: string
 }[] = [
@@ -29,15 +31,11 @@ export const SUBJECT_PRACTICE_TIMER_OPTIONS: {
   { value: 60 * 60, label: '1 hora' },
   { value: 90 * 60, label: '1h30' },
   { value: 120 * 60, label: '2 horas' },
+  { value: TIME_DAY_SECONDS, label: '4h30 (ENEM)' },
 ]
 
 export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const SUBJECT_PRACTICE_QUESTION_PRESETS = [5, 10, 15, 20, 30, 45] as const
-
-export type EnemYear = {
-  year: number
-  title: string
-}
 
 export type EnemSubjectArea = {
   area: string
@@ -85,7 +83,6 @@ export type SimulationHistoryItem = SimulationAttempt
 
 export type StartSimulationPayload = {
   mode: SimulationMode
-  examYear?: number
   subjectArea?: string
   questionCount?: number | null
   timeLimitSeconds?: number | null
@@ -95,6 +92,14 @@ export type StartSimulationResponse = {
   attempt: SimulationAttempt
   questions: SimulationQuestion[]
 }
+
+export type SimulationQuestionsBatchResponse = {
+  questions: SimulationQuestion[]
+  total: number
+  from: number
+}
+
+export const SIMULATION_QUESTION_BATCH_SIZE = 8
 
 export type SubmitSimulationResponse = {
   attempt: SimulationAttempt

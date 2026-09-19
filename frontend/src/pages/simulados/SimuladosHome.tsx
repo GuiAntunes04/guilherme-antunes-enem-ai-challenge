@@ -3,21 +3,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   fetchEnemSubjectAreas,
-  fetchEnemYears,
   fetchSimulationHistory,
   startSimulation,
 } from '../../lib/simulations-api'
 import type {
   EnemSubjectArea,
-  EnemYear,
   SimulationHistoryItem,
   SimulationMode,
 } from '../../types/simulation'
 import {
   SIMULATION_MODES,
+  SIMULATION_TIMER_OPTIONS,
   SUBJECT_PRACTICE_MAX_QUESTIONS,
   SUBJECT_PRACTICE_QUESTION_PRESETS,
-  SUBJECT_PRACTICE_TIMER_OPTIONS,
+  TIME_DAY_SECONDS,
 } from '../../types/simulation'
 
 function loadableQuestionCount(available: number): number {
@@ -33,16 +32,21 @@ function defaultQuestionSelection(available: number): number | 'all' {
   return preset ?? 'all'
 }
 
+function defaultTimerForMode(mode: SimulationMode): number | null {
+  if (mode === 'day_one' || mode === 'day_two') {
+    return TIME_DAY_SECONDS
+  }
+  return null
+}
+
 export function SimuladosHome() {
   const navigate = useNavigate()
   const { session } = useAuth()
   const token = session?.access_token ?? ''
 
-  const [years, setYears] = useState<EnemYear[]>([])
   const [subjectAreas, setSubjectAreas] = useState<EnemSubjectArea[]>([])
   const [history, setHistory] = useState<SimulationHistoryItem[]>([])
   const [mode, setMode] = useState<SimulationMode>('subject_practice')
-  const [examYear, setExamYear] = useState<number | ''>('')
   const [subjectArea, setSubjectArea] = useState('')
   const [questionCount, setQuestionCount] = useState<number | 'all'>(10)
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null)
@@ -52,7 +56,7 @@ export function SimuladosHome() {
   const [error, setError] = useState<string | null>(null)
 
   const isSubjectPractice = mode === 'subject_practice'
-  const needsYear = mode === 'day_one' || mode === 'day_two'
+  const isDaySimulation = mode === 'day_one' || mode === 'day_two'
 
   const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
   const availableCount = selectedSubjectArea?.count ?? 0
@@ -66,26 +70,11 @@ export function SimuladosHome() {
   useEffect(() => {
     if (!token) return
 
-    Promise.all([fetchSimulationHistory(token)])
-      .then(([historyData]) => {
-        setHistory(historyData)
-      })
+    fetchSimulationHistory(token)
+      .then(setHistory)
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar'))
       .finally(() => setLoading(false))
   }, [token])
-
-  useEffect(() => {
-    if (!token || !needsYear) return
-
-    fetchEnemYears(token)
-      .then((yearsData) => {
-        setYears(yearsData)
-        if (yearsData.length > 0) {
-          setExamYear(yearsData[0].year)
-        }
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar anos'))
-  }, [token, needsYear])
 
   useEffect(() => {
     if (!token || !isSubjectPractice) return
@@ -104,6 +93,10 @@ export function SimuladosHome() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar matérias'))
       .finally(() => setLoadingMeta(false))
   }, [token, isSubjectPractice])
+
+  useEffect(() => {
+    setTimeLimitSeconds(defaultTimerForMode(mode))
+  }, [mode])
 
   useEffect(() => {
     if (!isSubjectPractice || loadableCount === 0) return
@@ -137,12 +130,12 @@ export function SimuladosHome() {
           }
         : {
             mode,
-            examYear: Number(examYear),
+            timeLimitSeconds,
           }
 
-      const { attempt, questions } = await startSimulation(token, payload)
+      const { attempt } = await startSimulation(token, payload)
       navigate(`/simulados/${attempt.id}`, {
-        state: { questions, attempt },
+        state: { attempt },
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao iniciar simulado')
@@ -153,7 +146,7 @@ export function SimuladosHome() {
 
   const canStart = isSubjectPractice
     ? !starting && !loadingMeta && Boolean(subjectArea) && availableCount > 0
-    : !starting && Boolean(examYear)
+    : !starting
 
   if (loading) {
     return <p className="text-slate-400">Carregando simulados...</p>
@@ -171,8 +164,8 @@ export function SimuladosHome() {
           Pratique com questões reais do ENEM
         </h1>
         <p className="mt-3 max-w-2xl text-slate-400">
-          Questões oficiais via EnemHub — pratique por tópico com cronômetro personalizado ou
-          simule o 1º ou 2º dia completo da prova.
+          Questões oficiais via EnemHub — pratique por tópico ou simule o 1º ou 2º dia completo
+          com questões aleatórias de vários anos.
         </p>
       </div>
 
@@ -205,24 +198,14 @@ export function SimuladosHome() {
             <p className="text-sm text-slate-500">{selectedMode.description}</p>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {needsYear && (
-              <label className="block">
-                <span className="mb-1.5 block text-sm text-slate-300">Ano da prova</span>
-                <select
-                  value={examYear}
-                  onChange={(e) => setExamYear(Number(e.target.value))}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
-                >
-                  {years.map((item) => (
-                    <option key={item.year} value={item.year}>
-                      {item.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+          {isDaySimulation && (
+            <p className="text-sm text-slate-400">
+              90 questões distribuídas por disciplina (padrão ENEM), sorteadas entre todos os
+              anos disponíveis. Cada simulado é único em relação aos seus anteriores.
+            </p>
+          )}
 
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {isSubjectPractice && (
               <>
                 <label className="block sm:col-span-2">
@@ -272,28 +255,30 @@ export function SimuladosHome() {
                     )}
                   </select>
                 </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-sm text-slate-300">Cronômetro</span>
-                  <select
-                    value={timeLimitSeconds === null ? 'unlimited' : String(timeLimitSeconds)}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setTimeLimitSeconds(value === 'unlimited' ? null : Number(value))
-                    }}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
-                  >
-                    {SUBJECT_PRACTICE_TIMER_OPTIONS.map((option) => (
-                      <option
-                        key={option.label}
-                        value={option.value === null ? 'unlimited' : String(option.value)}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </>
+            )}
+
+            {(isSubjectPractice || isDaySimulation) && (
+              <label className="block">
+                <span className="mb-1.5 block text-sm text-slate-300">Cronômetro</span>
+                <select
+                  value={timeLimitSeconds === null ? 'unlimited' : String(timeLimitSeconds)}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setTimeLimitSeconds(value === 'unlimited' ? null : Number(value))
+                  }}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
+                >
+                  {SIMULATION_TIMER_OPTIONS.map((option) => (
+                    <option
+                      key={option.label}
+                      value={option.value === null ? 'unlimited' : String(option.value)}
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
           </div>
         </div>
@@ -305,7 +290,9 @@ export function SimuladosHome() {
           className="mt-6 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {starting
-            ? `Buscando ${questionCount === 'all' ? questionOptions.loadableCount : questionCount} questões...`
+            ? isDaySimulation
+              ? 'Montando simulado de 90 questões...'
+              : `Buscando ${questionCount === 'all' ? questionOptions.loadableCount : questionCount} questões...`
             : 'Iniciar simulado'}
         </button>
       </section>
