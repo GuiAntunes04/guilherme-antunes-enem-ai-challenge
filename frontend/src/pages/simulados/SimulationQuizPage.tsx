@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { QuestionCard } from '../../components/simulation/QuestionCard'
+import { TutorChatPanel } from '../../components/tutor/TutorChatPanel'
 import {
   getElapsedSeconds,
   SimulationTimer,
@@ -189,7 +190,7 @@ export function SimulationQuizPage() {
   if (!currentQuestion) return null
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-6xl">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm text-slate-400">
@@ -220,48 +221,69 @@ export function SimulationQuizPage() {
         />
       </div>
 
-      {error && (
-        <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div>
+          {error && (
+            <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {error}
+            </p>
+          )}
 
-      <QuestionCard
-        question={currentQuestion}
-        selectedOption={answers[currentQuestion.id] ?? null}
-        onSelect={(option) =>
-          setAnswers((prev) => ({ ...prev, [currentQuestion.id]: option }))
-        }
-      />
+          <QuestionCard
+            question={currentQuestion}
+            selectedOption={answers[currentQuestion.id] ?? null}
+            onSelect={(option) =>
+              setAnswers((prev) => ({ ...prev, [currentQuestion.id]: option }))
+            }
+          />
 
-      <div className="mt-6 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          disabled={currentIndex === 0}
-          onClick={() => setCurrentIndex((i) => i - 1)}
-          className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 disabled:opacity-40"
-        >
-          Anterior
-        </button>
+          <div className="mt-6 flex items-center justify-between gap-4">
+            <button
+              type="button"
+              disabled={currentIndex === 0}
+              onClick={() => setCurrentIndex((i) => i - 1)}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 disabled:opacity-40"
+            >
+              Anterior
+            </button>
 
-        {currentIndex < questions.length - 1 ? (
-          <button
-            type="button"
-            onClick={() => setCurrentIndex((i) => i + 1)}
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700"
-          >
-            Próxima
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={!allAnswered || submitting}
-            onClick={() => void submitAnswers()}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
-          >
-            {submitting ? 'Enviando...' : 'Finalizar simulado'}
-          </button>
-        )}
+            {currentIndex < questions.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentIndex((i) => i + 1)}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700"
+              >
+                Próxima
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!allAnswered || submitting}
+                onClick={() => void submitAnswers()}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+              >
+                {submitting ? 'Enviando...' : 'Finalizar simulado'}
+              </button>
+            )}
+          </div>
+
+          <div className="mt-6 lg:hidden">
+            <TutorChatPanel
+              mode="simulation"
+              attemptId={attemptId}
+              question={currentQuestion}
+              compact
+            />
+          </div>
+        </div>
+
+        <div className="hidden lg:block">
+          <TutorChatPanel
+            mode="simulation"
+            attemptId={attemptId}
+            question={currentQuestion}
+          />
+        </div>
       </div>
     </div>
   )
