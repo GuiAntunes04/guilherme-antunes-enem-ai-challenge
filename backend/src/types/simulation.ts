@@ -31,6 +31,8 @@ export const DAY_TWO_AREAS = [
 ]
 
 export const QUESTIONS_PER_AREA = 45
+/** Max questions loaded from EnemHub per subject-practice attempt (API quota). */
+export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const TIME_AREA_SECONDS = 90 * 60
 export const TIME_DAY_SECONDS = 270 * 60
 

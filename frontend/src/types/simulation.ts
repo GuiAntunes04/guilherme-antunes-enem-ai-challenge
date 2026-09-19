@@ -31,6 +31,7 @@ export const SUBJECT_PRACTICE_TIMER_OPTIONS: {
   { value: 120 * 60, label: '2 horas' },
 ]
 
+export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const SUBJECT_PRACTICE_QUESTION_PRESETS = [5, 10, 15, 20, 30, 45] as const
 
 export type EnemYear = {

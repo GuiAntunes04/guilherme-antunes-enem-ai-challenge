@@ -15,9 +15,23 @@ import type {
 } from '../../types/simulation'
 import {
   SIMULATION_MODES,
+  SUBJECT_PRACTICE_MAX_QUESTIONS,
   SUBJECT_PRACTICE_QUESTION_PRESETS,
   SUBJECT_PRACTICE_TIMER_OPTIONS,
 } from '../../types/simulation'
+
+function loadableQuestionCount(available: number): number {
+  return Math.min(available, SUBJECT_PRACTICE_MAX_QUESTIONS)
+}
+
+function defaultQuestionSelection(available: number): number | 'all' {
+  const loadable = loadableQuestionCount(available)
+  if (loadable <= 0) return 10
+  if (loadable < 5) return 'all'
+
+  const preset = SUBJECT_PRACTICE_QUESTION_PRESETS.find((count) => count <= loadable)
+  return preset ?? 'all'
+}
 
 export function SimuladosHome() {
   const navigate = useNavigate()
@@ -42,11 +56,12 @@ export function SimuladosHome() {
 
   const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
   const availableCount = selectedSubjectArea?.count ?? 0
+  const loadableCount = loadableQuestionCount(availableCount)
 
   const questionOptions = useMemo(() => {
-    const presets = SUBJECT_PRACTICE_QUESTION_PRESETS.filter((count) => count <= availableCount)
-    return { presets, showAll: availableCount > 0 }
-  }, [availableCount])
+    const presets = SUBJECT_PRACTICE_QUESTION_PRESETS.filter((count) => count <= loadableCount)
+    return { presets, showAll: loadableCount > 0, loadableCount }
+  }, [loadableCount])
 
   useEffect(() => {
     if (!token) return
@@ -83,6 +98,7 @@ export function SimuladosHome() {
         setSubjectAreas(areasData)
         if (areasData.length > 0) {
           setSubjectArea(areasData[0].area)
+          setQuestionCount(defaultQuestionSelection(areasData[0].count))
         }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar matérias'))
@@ -90,17 +106,22 @@ export function SimuladosHome() {
   }, [token, isSubjectPractice])
 
   useEffect(() => {
-    if (!isSubjectPractice || availableCount === 0) return
+    if (!isSubjectPractice || loadableCount === 0) return
 
     if (questionCount === 'all') return
 
-    if (questionCount > availableCount) {
-      const fallback =
-        [...SUBJECT_PRACTICE_QUESTION_PRESETS].reverse().find((count) => count <= availableCount) ??
-        'all'
-      setQuestionCount(fallback)
+    if (questionCount > loadableCount) {
+      setQuestionCount(defaultQuestionSelection(availableCount))
     }
-  }, [isSubjectPractice, availableCount, questionCount])
+  }, [isSubjectPractice, availableCount, loadableCount, questionCount])
+
+  function handleSubjectAreaChange(nextArea: string) {
+    setSubjectArea(nextArea)
+    const next = subjectAreas.find((item) => item.area === nextArea)
+    if (next) {
+      setQuestionCount(defaultQuestionSelection(next.count))
+    }
+  }
 
   async function handleStart() {
     setError(null)
@@ -208,7 +229,7 @@ export function SimuladosHome() {
                   <span className="mb-1.5 block text-sm text-slate-300">Matéria</span>
                   <select
                     value={subjectArea}
-                    onChange={(e) => setSubjectArea(e.target.value)}
+                    onChange={(e) => handleSubjectAreaChange(e.target.value)}
                     disabled={loadingMeta || subjectAreas.length === 0}
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
                   >
@@ -241,7 +262,13 @@ export function SimuladosHome() {
                       </option>
                     ))}
                     {questionOptions.showAll && (
-                      <option value="all">Todas ({availableCount})</option>
+                      <option value="all">
+                        Todas ({questionOptions.loadableCount}
+                        {availableCount > SUBJECT_PRACTICE_MAX_QUESTIONS
+                          ? ` de ${availableCount}`
+                          : ''}
+                        )
+                      </option>
                     )}
                   </select>
                 </label>
@@ -277,7 +304,9 @@ export function SimuladosHome() {
           disabled={!canStart}
           className="mt-6 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {starting ? 'Preparando questões...' : 'Iniciar simulado'}
+          {starting
+            ? `Buscando ${questionCount === 'all' ? questionOptions.loadableCount : questionCount} questões...`
+            : 'Iniciar simulado'}
         </button>
       </section>
 

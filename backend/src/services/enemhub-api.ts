@@ -8,7 +8,9 @@ import { resolveKnowledgeAreaFromSubject } from '../lib/enem-knowledge-areas.js'
 import { ENEM_AREA_ORDER } from '../types/simulation.js'
 
 const BASE_URL = 'https://api.enemhub.com.br/v1/enem/questions'
-const MAX_RETRIES = 3
+const MAX_RETRIES = 5
+const FETCH_CONCURRENCY = 4
+const FETCH_BATCH_DELAY_MS = 250
 
 const questionCache = new Map<string, EnemHubQuestion>()
 
@@ -16,6 +18,10 @@ export const AVAILABLE_YEARS = [
   2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010,
   2009,
 ]
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 async function enemhubFetch(url: string): Promise<Response> {
   if (!env.enemhubApiKey) {
@@ -28,8 +34,8 @@ async function enemhubFetch(url: string): Promise<Response> {
     })
 
     if (response.status === 429) {
-      const retryAfter = Number(response.headers.get('Retry-After') ?? 60)
-      await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000))
+      const retryAfter = Number(response.headers.get('Retry-After') ?? 5)
+      await sleep(Math.min(retryAfter, 15) * 1000)
       continue
     }
 
@@ -41,7 +47,7 @@ async function enemhubFetch(url: string): Promise<Response> {
     return response
   }
 
-  throw new Error('EnemHub API rate limit persistente após 3 tentativas')
+  throw new Error(`EnemHub API rate limit persistente após ${MAX_RETRIES} tentativas`)
 }
 
 function buildListUrl(params: Record<string, string>): string {
@@ -70,7 +76,24 @@ export async function fetchQuestionById(id: string): Promise<EnemHubQuestion> {
 }
 
 export async function fetchQuestionsByIds(ids: string[]): Promise<EnemHubQuestion[]> {
-  return Promise.all(ids.map((id) => fetchQuestionById(id)))
+  const uniqueIds = [...new Set(ids)]
+  const results: EnemHubQuestion[] = []
+
+  for (let offset = 0; offset < uniqueIds.length; offset += FETCH_CONCURRENCY) {
+    const batch = uniqueIds.slice(offset, offset + FETCH_CONCURRENCY)
+    const batchResults = await Promise.all(batch.map((id) => fetchQuestionById(id)))
+    results.push(...batchResults)
+
+    if (offset + FETCH_CONCURRENCY < uniqueIds.length) {
+      await sleep(FETCH_BATCH_DELAY_MS)
+    }
+  }
+
+  const resultMap = new Map(results.map((question) => [question.id, question]))
+  return ids.flatMap((id) => {
+    const question = resultMap.get(id)
+    return question ? [question] : []
+  })
 }
 
 export function cacheQuestions(questions: EnemHubQuestion[]): void {
