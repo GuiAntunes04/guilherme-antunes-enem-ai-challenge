@@ -16,6 +16,7 @@ export const env = {
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
   supabaseJwksUrl: process.env.SUPABASE_JWKS_URL,
   geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL ?? 'gemini-3.6-flash',
   enemhubApiKey: process.env.ENEMHUB_API_KEY,
 }
 

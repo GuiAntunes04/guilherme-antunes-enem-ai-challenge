@@ -6,6 +6,7 @@ import { healthRouter } from './routes/health.js'
 import { meRouter } from './routes/me.js'
 import { simulationsRouter } from './routes/simulations.js'
 import { statsRouter } from './routes/stats.js'
+import { tutorRouter } from './routes/tutor.js'
 
 export function createApp() {
   const app = express()
@@ -23,6 +24,7 @@ export function createApp() {
   app.use('/api/stats', statsRouter)
   app.use('/api/enem', enemRouter)
   app.use('/api/simulations', simulationsRouter)
+  app.use('/api/tutor', tutorRouter)
 
   app.get('/', (_req, res) => {
     res.json({

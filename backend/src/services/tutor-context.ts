@@ -1,0 +1,35 @@
+import type { SanitizedQuestion } from '../types/enemhub.js'
+import { fetchQuestionById, sanitizeQuestion } from './enemhub-api.js'
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, ' [imagem] ')
+    .replace(/<img[^>]*>/gi, ' [imagem] ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function formatQuestionContext(question: SanitizedQuestion): string {
+  const alternatives = question.alternatives
+    .map((alt) => `${alt.letter}) ${alt.text}`)
+    .join('\n')
+
+  return [
+    `Matéria: ${question.subjectName ?? 'Não informada'}`,
+    `Tópico: ${question.subjectArea ?? 'Não informado'}`,
+    `Ano: ENEM ${question.year}`,
+    `Dificuldade: ${question.difficulty}`,
+    '',
+    'Enunciado:',
+    stripHtml(question.statement),
+    '',
+    'Alternativas:',
+    alternatives,
+  ].join('\n')
+}
+
+export async function buildQuestionContextFromId(questionId: string): Promise<string> {
+  const question = sanitizeQuestion(await fetchQuestionById(questionId))
+  return formatQuestionContext(question)
+}
