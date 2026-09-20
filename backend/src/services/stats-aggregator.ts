@@ -99,21 +99,85 @@ export async function buildDashboardStats(userId: string): Promise<DashboardStat
   return { subjectPerformance, simulationTrend }
 }
 
+const ATTEMPT_ID_BATCH = 40
+const QUESTION_ID_BATCH = 100
+const ANSWERS_PAGE_SIZE = 1000
+
+async function fetchAnswersForAttempts(attemptIds: string[]): Promise<AnswerRow[]> {
+  const answers: AnswerRow[] = []
+
+  for (let i = 0; i < attemptIds.length; i += ATTEMPT_ID_BATCH) {
+    const batch = attemptIds.slice(i, i + ATTEMPT_ID_BATCH)
+    let offset = 0
+
+    while (true) {
+      const { data, error } = await supabaseAdmin
+        .from('attempt_answers')
+        .select('question_id, is_correct, attempt_id')
+        .in('attempt_id', batch)
+        .range(offset, offset + ANSWERS_PAGE_SIZE - 1)
+
+      if (error) {
+        throw error
+      }
+
+      if (!data?.length) {
+        break
+      }
+
+      answers.push(...(data as AnswerRow[]))
+
+      if (data.length < ANSWERS_PAGE_SIZE) {
+        break
+      }
+
+      offset += ANSWERS_PAGE_SIZE
+    }
+  }
+
+  return answers
+}
+
+async function fetchQuestionMetadata(questionIds: string[]): Promise<Map<string, QuestionMeta>> {
+  const questionMap = new Map<string, QuestionMeta>()
+
+  for (let i = 0; i < questionIds.length; i += QUESTION_ID_BATCH) {
+    const batch = questionIds.slice(i, i + QUESTION_ID_BATCH)
+    const { data, error } = await supabaseAdmin
+      .from('enem_questions_index')
+      .select('id, subject_name, subject_area')
+      .in('id', batch)
+
+    if (error) {
+      throw error
+    }
+
+    for (const question of (data ?? []) as QuestionMeta[]) {
+      questionMap.set(question.id, question)
+    }
+  }
+
+  return questionMap
+}
+
 async function aggregateSubjectPerformance(
   attemptIds: string[],
 ): Promise<SubjectPerformance[]> {
-  const { data: answers, error: answersError } = await supabaseAdmin
-    .from('attempt_answers')
-    .select('question_id, is_correct, attempt_id')
-    .in('attempt_id', attemptIds)
+  let answers: AnswerRow[] = []
 
-  if (answersError || !answers?.length) {
+  try {
+    answers = await fetchAnswersForAttempts(attemptIds)
+  } catch {
+    return []
+  }
+
+  if (!answers.length) {
     return []
   }
 
   const questionIds = [
     ...new Set(
-      (answers as AnswerRow[])
+      answers
         .map((answer) => answer.question_id)
         .filter((id): id is string => Boolean(id)),
     ),
@@ -123,22 +187,17 @@ async function aggregateSubjectPerformance(
     return []
   }
 
-  const { data: questions, error: questionsError } = await supabaseAdmin
-    .from('enem_questions_index')
-    .select('id, subject_name, subject_area')
-    .in('id', questionIds)
+  let questionMap: Map<string, QuestionMeta>
 
-  if (questionsError) {
+  try {
+    questionMap = await fetchQuestionMetadata(questionIds)
+  } catch {
     return []
   }
 
-  const questionMap = new Map(
-    ((questions ?? []) as QuestionMeta[]).map((question) => [question.id, question]),
-  )
-
   const totals = new Map<string, { subject: string; area: string; correct: number; total: number }>()
 
-  for (const answer of answers as AnswerRow[]) {
+  for (const answer of answers) {
     if (!answer.question_id) continue
 
     const meta = questionMap.get(answer.question_id)

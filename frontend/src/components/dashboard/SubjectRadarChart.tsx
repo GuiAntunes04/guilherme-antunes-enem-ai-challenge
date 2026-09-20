@@ -25,6 +25,7 @@ export function SubjectRadarChart({ data }: SubjectRadarChartProps) {
   const chartData = data.slice(0, 10).map((item) => ({
     subject: item.subject,
     accuracy: item.accuracy,
+    correct: item.correct,
     total: item.total,
   }))
 
@@ -59,8 +60,13 @@ export function SubjectRadarChart({ data }: SubjectRadarChartProps) {
             }}
             formatter={(value, _name, payload) => {
               const numeric = typeof value === 'number' ? value : Number(value ?? 0)
+              const correct = payload?.payload?.correct as number | undefined
               const total = payload?.payload?.total as number | undefined
-              return [`${numeric}%${total ? ` (${total} questões)` : ''}`, 'Acertos']
+              const hits =
+                correct !== undefined && total !== undefined
+                  ? `${correct}/${total} acertos`
+                  : null
+              return [hits ? `${numeric}% · ${hits}` : `${numeric}%`, 'Desempenho']
             }}
           />
         </RadarChart>

@@ -91,19 +91,17 @@ export function HomePage() {
             <div>
               <h2 className="text-lg font-semibold text-white">Desempenho por matéria</h2>
               <p className="mt-1 text-sm text-slate-400">
-                Taxa de acerto agregada dos simulados com questões objetivas.
+                Taxa de acerto por matéria, somando todos os simulados finalizados.
               </p>
             </div>
           </div>
           {statsLoading ? (
             <p className="mt-8 text-sm text-slate-400">Carregando gráfico...</p>
           ) : (
-            <>
-              <div className="mt-4">
-                <SubjectRadarChart data={stats?.subjectPerformance ?? []} />
-              </div>
+            <div className="mt-4">
+              <SubjectRadarChart data={stats?.subjectPerformance ?? []} />
               <SubjectPerformanceList data={stats?.subjectPerformance ?? []} />
-            </>
+            </div>
           )}
         </section>
 
