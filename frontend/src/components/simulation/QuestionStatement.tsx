@@ -5,10 +5,44 @@ type QuestionStatementProps = {
   html: string
 }
 
+const INLINE_FORMULA_MAX_WIDTH = 140
+const INLINE_FORMULA_MAX_HEIGHT = 64
+
 function hasTextBesidesImages(element: Element): boolean {
   return [...element.childNodes].some(
     (node) => node.nodeType === Node.TEXT_NODE && (node.textContent?.trim() ?? '') !== '',
   )
+}
+
+function readImageDimension(img: Element, attr: 'width' | 'height'): number | null {
+  const raw = img.getAttribute(attr)
+  if (!raw) return null
+
+  const value = Number.parseInt(raw, 10)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+/** Small PNG/SVG formulas from EnemHub — keep inline with invert filter for dark theme. */
+function isLikelyInlineFormula(img: Element): boolean {
+  const width = readImageDimension(img, 'width')
+  const height = readImageDimension(img, 'height')
+
+  if (width !== null && height !== null) {
+    return width <= INLINE_FORMULA_MAX_WIDTH && height <= INLINE_FORMULA_MAX_HEIGHT
+  }
+
+  if (width !== null) return width <= INLINE_FORMULA_MAX_WIDTH
+  if (height !== null) return height <= INLINE_FORMULA_MAX_HEIGHT
+
+  const parent = img.parentElement
+  if (parent?.tagName === 'P') {
+    if (hasTextBesidesImages(parent)) return true
+    if (parent.querySelectorAll('img').length === 1 && !parent.textContent?.trim()) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /** Wrap diagram images in <figure> so they are not styled as inline math. */
@@ -21,6 +55,7 @@ function normalizeStatementHtml(html: string): string {
 
   for (const img of [...root.querySelectorAll('img')]) {
     if (img.closest('figure')) continue
+    if (isLikelyInlineFormula(img)) continue
 
     const parent = img.parentElement
     if (!parent) continue
@@ -56,7 +91,7 @@ function normalizeStatementHtml(html: string): string {
 function sanitizeStatement(html: string): string {
   return DOMPurify.sanitize(html, {
     ADD_TAGS: ['figure', 'img', 'sup', 'sub'],
-    ADD_ATTR: ['src', 'alt'],
+    ADD_ATTR: ['src', 'alt', 'width', 'height'],
     FORBID_ATTR: ['style', 'class', 'color', 'bgcolor', 'background'],
   })
 }
@@ -65,12 +100,18 @@ function prepareStatement(html: string): string {
   return sanitizeStatement(normalizeStatementHtml(html))
 }
 
+const inlineFormulaStyles =
+  '[&_p_img]:mx-0.5 [&_p_img]:inline [&_p_img]:max-h-[1.25em] [&_p_img]:align-middle [&_p_img]:rounded-none [&_p_img]:border-0 [&_p_img]:invert [&_p_img]:hue-rotate-180'
+
+const diagramFigureStyles =
+  '[&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-auto [&_figure_img]:max-w-full [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-slate-700'
+
 export function QuestionStatement({ html }: QuestionStatementProps) {
   const sanitized = useMemo(() => prepareStatement(html), [html])
 
   return (
     <div
-      className="question-statement mb-6 text-sm leading-relaxed text-slate-200 [&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-auto [&_figure_img]:max-w-full [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-slate-700 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p_img]:mx-0.5 [&_p_img]:inline [&_p_img]:max-h-[1.25em] [&_p_img]:align-middle [&_p_img]:rounded-none [&_p_img]:border-0 [&_p_img]:invert [&_p_img]:hue-rotate-180 [&_sub]:text-[0.75em] [&_sup]:text-[0.75em]"
+      className={`question-statement mb-6 text-sm leading-relaxed text-slate-200 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_sub]:text-[0.75em] [&_sup]:text-[0.75em] ${inlineFormulaStyles} ${diagramFigureStyles}`}
       dangerouslySetInnerHTML={{ __html: sanitized }}
     />
   )
