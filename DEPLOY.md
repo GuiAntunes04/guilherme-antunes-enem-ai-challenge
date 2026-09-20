@@ -5,7 +5,7 @@
 1. Crie um **Web Service** no [Render](https://render.com/) conectado ao repositório GitHub
 2. Use o blueprint [`render.yaml`](render.yaml) ou configure manualmente:
    - **Root Directory:** `backend`
-   - **Build Command:** `npm install && npm run build`
+   - **Build Command:** `npm install --include=dev && npm run build`
    - **Start Command:** `npm start`
    - **Health Check Path:** `/api/health`
 3. Defina as variáveis de ambiente (ver [`backend/.env.example`](backend/.env.example))
