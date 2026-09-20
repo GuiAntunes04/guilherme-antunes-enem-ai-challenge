@@ -28,6 +28,8 @@ alter table public.essays
 alter table public.simulation_attempts
   add column if not exists essay_id uuid references public.essays (id) on delete set null;
 
+drop policy if exists "Users can update own essays" on public.essays;
+
 create policy "Users can update own essays"
   on public.essays for update
   using (auth.uid() = user_id);
