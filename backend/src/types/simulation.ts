@@ -1,9 +1,10 @@
-export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two'
+export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two' | 'essay'
 
 export const SIMULATION_MODE_LABELS: Record<SimulationMode, string> = {
   subject_practice: 'Matéria específica',
   day_one: '1º dia ENEM (90 questões)',
   day_two: '2º dia ENEM (90 questões)',
+  essay: 'Redação ENEM',
 }
 
 /** Labels for modes removed from the UI; kept for history display. */
@@ -35,6 +36,7 @@ export const QUESTIONS_PER_AREA = 45
 export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const TIME_AREA_SECONDS = 90 * 60
 export const TIME_DAY_SECONDS = 270 * 60
+export const TIME_ESSAY_SECONDS = 90 * 60
 
 export type StartSimulationBody = {
   mode: SimulationMode

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { QuestionCard } from '../../components/simulation/QuestionCard'
 import { useAuth } from '../../contexts/AuthContext'
 import { fetchSimulation } from '../../lib/simulations-api'
+import { EssayResultPage } from './EssayResultPage'
 import type {
   SimulationAnswer,
   SimulationAttempt,
@@ -52,6 +53,10 @@ export function SimulationResultPage() {
         </Link>
       </div>
     )
+  }
+
+  if (attempt.mode === 'essay' && attemptId) {
+    return <EssayResultPage attemptId={attemptId} />
   }
 
   const percentage = Math.round((attempt.score / attempt.total) * 100)

@@ -101,7 +101,7 @@ export async function startSimulation(
   const response = await authFetch('/api/simulations/start', token, {
     method: 'POST',
     body: JSON.stringify(payload),
-    timeoutMs: 30_000,
+    timeoutMs: payload.mode === 'essay' ? 90_000 : 30_000,
   })
 
   if (!response.ok) {

@@ -15,7 +15,9 @@ import {
 } from '../services/enemhub-api.js'
 
 import { QuestionIndexNotSyncedError } from '../services/question-index.js'
+import { mapEssay } from '../services/essay-mapper.js'
 import { isValidMode, planSimulation } from '../services/simulation-builder.js'
+import type { EssayRow } from '../types/essay.js'
 
 import {
   LEGACY_SIMULATION_MODE_LABELS,
@@ -78,7 +80,10 @@ function formatAttemptTitle(attempt: Record<string, unknown>): string {
 }
 
 const ATTEMPT_TIMER_FIELDS =
-  'id, exam_year, discipline, mode, years_used, score, total, started_at, quiz_started_at, time_limit_seconds, finished_at, elapsed_seconds'
+  'id, exam_year, discipline, mode, years_used, score, total, started_at, quiz_started_at, time_limit_seconds, finished_at, elapsed_seconds, essay_id'
+
+const ESSAY_FIELDS =
+  'id, user_id, theme, motivators, content, source, status, ai_feedback, time_limit_seconds, elapsed_seconds, quiz_started_at, finished_at, created_at'
 
 function mapAttemptRow(attempt: Record<string, unknown>) {
   return {
@@ -324,6 +329,21 @@ simulationsRouter.get('/:id', async (req, res) => {
 
 
 
+  let essay = null
+
+  if (attempt.essay_id) {
+    const { data: essayRow } = await supabaseAdmin
+      .from('essays')
+      .select(ESSAY_FIELDS)
+      .eq('id', attempt.essay_id)
+      .eq('user_id', userId)
+      .single()
+
+    if (essayRow) {
+      essay = mapEssay(essayRow as EssayRow)
+    }
+  }
+
   res.json({
 
     attempt: {
@@ -339,6 +359,8 @@ simulationsRouter.get('/:id', async (req, res) => {
     answers: enrichedAnswers,
 
     questions,
+
+    essay,
 
   })
 
@@ -370,6 +392,36 @@ simulationsRouter.post('/start', async (req, res) => {
 
     const questionIds = planned.questionIds
 
+    let essayId: string | null = null
+
+    if (body.mode === 'essay') {
+      if (!planned.essayTheme) {
+        res.status(502).json({ error: 'Failed to generate essay theme' })
+        return
+      }
+
+      const { data: essayRow, error: essayError } = await supabaseAdmin
+        .from('essays')
+        .insert({
+          user_id: userId,
+          theme: planned.essayTheme.title,
+          motivators: planned.essayTheme.motivators,
+          content: '',
+          source: 'simulation',
+          status: 'draft',
+          time_limit_seconds: planned.timeLimitSeconds,
+        })
+        .select(ESSAY_FIELDS)
+        .single()
+
+      if (essayError || !essayRow) {
+        res.status(500).json({ error: 'Failed to create essay', message: essayError?.message })
+        return
+      }
+
+      essayId = essayRow.id
+    }
+
     const { data: attempt, error } = await supabaseAdmin
 
       .from('simulation_attempts')
@@ -390,11 +442,13 @@ simulationsRouter.post('/start', async (req, res) => {
 
         score: 0,
 
-        total: questionIds.length,
+        total: body.mode === 'essay' ? 1000 : questionIds.length,
 
         question_ids: questionIds,
 
         time_limit_seconds: planned.timeLimitSeconds,
+
+        essay_id: essayId,
 
       })
 
@@ -412,13 +466,27 @@ simulationsRouter.post('/start', async (req, res) => {
 
     }
 
+    let essay = null
 
+    if (essayId) {
+      const { data: essayRow } = await supabaseAdmin
+        .from('essays')
+        .select(ESSAY_FIELDS)
+        .eq('id', essayId)
+        .single()
+
+      if (essayRow) {
+        essay = mapEssay(essayRow as EssayRow)
+      }
+    }
 
     res.status(201).json({
 
       attempt: mapAttemptRow(attempt),
 
       questions: [],
+
+      essay,
 
     })
 

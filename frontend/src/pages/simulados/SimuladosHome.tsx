@@ -17,6 +17,7 @@ import {
   SUBJECT_PRACTICE_MAX_QUESTIONS,
   SUBJECT_PRACTICE_QUESTION_PRESETS,
   TIME_DAY_SECONDS,
+  TIME_ESSAY_SECONDS,
 } from '../../types/simulation'
 
 function loadableQuestionCount(available: number): number {
@@ -35,6 +36,9 @@ function defaultQuestionSelection(available: number): number | 'all' {
 function defaultTimerForMode(mode: SimulationMode): number | null {
   if (mode === 'day_one' || mode === 'day_two') {
     return TIME_DAY_SECONDS
+  }
+  if (mode === 'essay') {
+    return TIME_ESSAY_SECONDS
   }
   return null
 }
@@ -57,6 +61,7 @@ export function SimuladosHome() {
 
   const isSubjectPractice = mode === 'subject_practice'
   const isDaySimulation = mode === 'day_one' || mode === 'day_two'
+  const isEssaySimulation = mode === 'essay'
 
   const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
   const availableCount = selectedSubjectArea?.count ?? 0
@@ -134,7 +139,9 @@ export function SimuladosHome() {
           }
 
       const { attempt } = await startSimulation(token, payload)
-      navigate(`/simulados/${attempt.id}`, {
+      const destination =
+        mode === 'essay' ? `/simulados/${attempt.id}/redacao` : `/simulados/${attempt.id}`
+      navigate(destination, {
         state: { attempt },
       })
     } catch (err) {
@@ -205,6 +212,13 @@ export function SimuladosHome() {
             </p>
           )}
 
+          {isEssaySimulation && (
+            <p className="text-sm text-slate-400">
+              Tema gerado aleatoriamente pela IA. Escreva sua dissertação no tempo configurado e
+              receba correção nas 5 competências do ENEM.
+            </p>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {isSubjectPractice && (
               <>
@@ -258,7 +272,7 @@ export function SimuladosHome() {
               </>
             )}
 
-            {(isSubjectPractice || isDaySimulation) && (
+            {(isSubjectPractice || isDaySimulation || isEssaySimulation) && (
               <label className="block">
                 <span className="mb-1.5 block text-sm text-slate-300">Cronômetro</span>
                 <select

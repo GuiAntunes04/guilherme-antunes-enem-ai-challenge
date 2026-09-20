@@ -1,6 +1,9 @@
-export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two'
+import type { Essay } from './essay'
+
+export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two' | 'essay'
 
 export const TIME_DAY_SECONDS = 270 * 60
+export const TIME_ESSAY_SECONDS = 90 * 60
 
 export const SIMULATION_MODES: { value: SimulationMode; label: string; description: string }[] = [
   {
@@ -17,6 +20,11 @@ export const SIMULATION_MODES: { value: SimulationMode; label: string; descripti
     value: 'day_two',
     label: '2º dia ENEM',
     description: '90 questões · Natureza + Matemática · multi-anos',
+  },
+  {
+    value: 'essay',
+    label: 'Redação ENEM',
+    description: 'Tema aleatório · dissertação · correção nas 5 competências',
   },
 ]
 
@@ -68,6 +76,7 @@ export type SimulationAttempt = {
   total: number
   started_at: string
   quiz_started_at?: string | null
+  essay_id?: string | null
   finished_at?: string | null
   time_limit_seconds?: number | null
   elapsed_seconds?: number | null
@@ -92,6 +101,7 @@ export type StartSimulationPayload = {
 export type StartSimulationResponse = {
   attempt: SimulationAttempt
   questions: SimulationQuestion[]
+  essay?: Essay | null
 }
 
 export type BeginSimulationResponse = {
@@ -115,4 +125,5 @@ export type SimulationDetailResponse = {
   attempt: SimulationAttempt
   answers: SimulationAnswer[]
   questions: SimulationQuestion[] | null
+  essay?: Essay | null
 }

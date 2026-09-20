@@ -1,6 +1,9 @@
 import { getDaySimulationQuestionTarget } from '../lib/enem-knowledge-areas.js'
 import type { EnemHubQuestion } from '../types/enemhub.js'
+import type { EssayTheme } from '../types/essay.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
+import { TIME_ESSAY_SECONDS } from '../types/simulation.js'
+import { generateEssayTheme } from './gemini.js'
 import { fetchQuestionsByIds, sortLikeEnem } from './enemhub-api.js'
 import {
   pickQuestionIdsBySubjectArea,
@@ -14,6 +17,7 @@ export type PlannedSimulation = {
   discipline: string
   subjectId: string | null
   timeLimitSeconds: number | null
+  essayTheme?: EssayTheme
 }
 
 export type BuildSimulationOptions = {
@@ -102,6 +106,21 @@ export async function planSimulation(
       }
     }
 
+    case 'essay': {
+      const theme = await generateEssayTheme()
+      const timeLimitSeconds = resolveTimeLimitSeconds(body) ?? TIME_ESSAY_SECONDS
+
+      return {
+        questionIds: [],
+        examYear: null,
+        yearsUsed: [],
+        discipline: 'Redação ENEM',
+        subjectId: null,
+        timeLimitSeconds,
+        essayTheme: theme,
+      }
+    }
+
     default:
       throw new Error('Invalid simulation mode')
   }
@@ -126,5 +145,5 @@ export async function loadSimulationQuestions(
 }
 
 export function isValidMode(mode: string): mode is SimulationMode {
-  return ['subject_practice', 'day_one', 'day_two'].includes(mode)
+  return ['subject_practice', 'day_one', 'day_two', 'essay'].includes(mode)
 }
