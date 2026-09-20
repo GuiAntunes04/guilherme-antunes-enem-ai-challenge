@@ -1,5 +1,6 @@
 import type {
   BeginSimulationResponse,
+  EnemPracticeSubject,
   EnemSubjectArea,
   SimulationDetailResponse,
   SimulationHistoryItem,
@@ -75,10 +76,20 @@ export async function fetchEnemSubjectAreas(token: string): Promise<EnemSubjectA
   const response = await authFetch('/api/enem/subject-areas', token)
 
   if (!response.ok) {
-    await parseError(response, 'Falha ao carregar matérias')
+    await parseError(response, 'Falha ao carregar tópicos')
   }
 
   return response.json() as Promise<EnemSubjectArea[]>
+}
+
+export async function fetchEnemPracticeSubjects(token: string): Promise<EnemPracticeSubject[]> {
+  const response = await authFetch('/api/enem/practice-subjects', token)
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao carregar matérias')
+  }
+
+  return response.json() as Promise<EnemPracticeSubject[]>
 }
 
 export async function fetchSimulationHistory(

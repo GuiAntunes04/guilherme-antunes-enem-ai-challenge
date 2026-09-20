@@ -122,6 +122,51 @@ export async function getIndexedYears(): Promise<number[]> {
   return [...years].sort((a, b) => b - a)
 }
 
+export type PracticeSubjectOption = {
+  name: string
+  count: number
+  knowledgeArea: string | null
+}
+
+export async function getSubjectNamesFromIndex(): Promise<PracticeSubjectOption[]> {
+  await ensureIndexSynced()
+
+  const counts = new Map<string, number>()
+
+  for (let from = 0; ; from += INDEX_PAGE_SIZE) {
+    const { data, error } = await supabaseAdmin
+      .from('enem_questions_index')
+      .select('subject_name')
+      .not('subject_name', 'is', null)
+      .range(from, from + INDEX_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(`Failed to load subject names from index: ${error.message}`)
+    }
+
+    if (!data?.length) break
+
+    for (const row of data) {
+      const name = row.subject_name as string
+      counts.set(name, (counts.get(name) ?? 0) + 1)
+    }
+
+    if (data.length < INDEX_PAGE_SIZE) break
+  }
+
+  return [...counts.entries()]
+    .map(([name, count]) => ({
+      name,
+      count,
+      knowledgeArea: resolveKnowledgeAreaFromSubject(name),
+    }))
+    .sort((a, b) => {
+      const areaCompare = knowledgeAreaOrder(a.name) - knowledgeAreaOrder(b.name)
+      if (areaCompare !== 0) return areaCompare
+      return a.name.localeCompare(b.name)
+    })
+}
+
 export async function getSubjectAreasFromIndex(): Promise<
   { area: string; count: number }[]
 > {
@@ -297,6 +342,27 @@ export async function pickQuestionIdsBySubjectArea(
   count: number | null,
 ): Promise<{ ids: string[]; yearsUsed: number[] }> {
   const entries = await queryIndexEntries({ subjectArea })
+
+  if (entries.length === 0) {
+    return { ids: [], yearsUsed: [] }
+  }
+
+  const limit = resolveSubjectPracticeLimit(count, entries.length)
+  const picked = shuffleAndPick(entries, limit)
+
+  const yearsUsed = [...new Set(picked.map((entry) => entry.year))].sort((a, b) => b - a)
+
+  return {
+    ids: picked.map((entry) => entry.id),
+    yearsUsed,
+  }
+}
+
+export async function pickQuestionIdsBySubjectName(
+  subjectName: string,
+  count: number | null,
+): Promise<{ ids: string[]; yearsUsed: number[] }> {
+  const entries = await queryIndexEntries({ subjectNames: [subjectName] })
 
   if (entries.length === 0) {
     return { ids: [], yearsUsed: [] }

@@ -7,6 +7,7 @@ import { generateEssayTheme } from './gemini.js'
 import { fetchQuestionsByIds, sortLikeEnem } from './enemhub-api.js'
 import {
   pickQuestionIdsBySubjectArea,
+  pickQuestionIdsBySubjectName,
   pickQuestionIdsForDaySimulation,
 } from './question-index.js'
 
@@ -41,33 +42,41 @@ export async function planSimulation(
   switch (mode) {
     case 'subject_practice': {
       const subjectArea = String(body.subjectArea ?? '').trim()
+      const subjectName = String(body.subjectName ?? '').trim()
       const questionCount =
         body.questionCount === null || body.questionCount === undefined
           ? null
           : Number(body.questionCount)
 
-      if (!subjectArea) {
-        throw new Error('subjectArea is required')
+      if (subjectArea && subjectName) {
+        throw new Error('Informe subjectArea ou subjectName, não ambos')
+      }
+
+      if (!subjectArea && !subjectName) {
+        throw new Error('subjectArea or subjectName is required')
       }
 
       if (questionCount !== null && (questionCount < 1 || !Number.isFinite(questionCount))) {
         throw new Error('questionCount must be at least 1 or omitted for all questions')
       }
 
-      const { ids, yearsUsed } = await pickQuestionIdsBySubjectArea(
-        subjectArea,
-        questionCount,
-      )
+      const { ids, yearsUsed } = subjectName
+        ? await pickQuestionIdsBySubjectName(subjectName, questionCount)
+        : await pickQuestionIdsBySubjectArea(subjectArea, questionCount)
 
       if (ids.length === 0) {
-        throw new Error('Nenhuma questão encontrada para este tópico')
+        throw new Error(
+          subjectName
+            ? 'Nenhuma questão encontrada para esta matéria'
+            : 'Nenhuma questão encontrada para este tópico',
+        )
       }
 
       return {
         questionIds: ids,
         examYear: null,
         yearsUsed,
-        discipline: subjectArea,
+        discipline: subjectName || subjectArea,
         subjectId: null,
         timeLimitSeconds: resolveTimeLimitSeconds(body),
       }

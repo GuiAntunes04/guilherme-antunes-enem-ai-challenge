@@ -3,14 +3,17 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   deleteSimulation,
+  fetchEnemPracticeSubjects,
   fetchEnemSubjectAreas,
   fetchSimulationHistory,
   startSimulation,
 } from '../../lib/simulations-api'
 import type {
+  EnemPracticeSubject,
   EnemSubjectArea,
   SimulationHistoryItem,
   SimulationMode,
+  SubjectPracticeFilter,
 } from '../../types/simulation'
 import {
   SIMULATION_MODES,
@@ -50,10 +53,13 @@ export function SimuladosHome() {
   const token = session?.access_token ?? ''
 
   const [subjectAreas, setSubjectAreas] = useState<EnemSubjectArea[]>([])
+  const [practiceSubjects, setPracticeSubjects] = useState<EnemPracticeSubject[]>([])
   const [history, setHistory] = useState<SimulationHistoryItem[]>([])
   const [inProgress, setInProgress] = useState<SimulationHistoryItem[]>([])
   const [mode, setMode] = useState<SimulationMode>('subject_practice')
+  const [practiceFilter, setPracticeFilter] = useState<SubjectPracticeFilter>('subject')
   const [subjectArea, setSubjectArea] = useState('')
+  const [subjectName, setSubjectName] = useState('')
   const [questionCount, setQuestionCount] = useState<number | 'all'>(10)
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -67,8 +73,25 @@ export function SimuladosHome() {
   const isEssaySimulation = mode === 'essay'
 
   const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
-  const availableCount = selectedSubjectArea?.count ?? 0
+  const selectedPracticeSubject = practiceSubjects.find((item) => item.name === subjectName)
+  const availableCount =
+    practiceFilter === 'subject'
+      ? (selectedPracticeSubject?.count ?? 0)
+      : (selectedSubjectArea?.count ?? 0)
   const loadableCount = loadableQuestionCount(availableCount)
+
+  const practiceSubjectsByArea = useMemo(() => {
+    const groups = new Map<string, EnemPracticeSubject[]>()
+
+    for (const subject of practiceSubjects) {
+      const area = subject.knowledgeArea ?? 'Outras'
+      const list = groups.get(area) ?? []
+      list.push(subject)
+      groups.set(area, list)
+    }
+
+    return [...groups.entries()]
+  }, [practiceSubjects])
 
   const questionOptions = useMemo(() => {
     const presets = SUBJECT_PRACTICE_QUESTION_PRESETS.filter((count) => count <= loadableCount)
@@ -102,16 +125,23 @@ export function SimuladosHome() {
 
     setLoadingMeta(true)
     setSubjectArea('')
+    setSubjectName('')
 
-    fetchEnemSubjectAreas(token)
-      .then((areasData) => {
+    Promise.all([fetchEnemPracticeSubjects(token), fetchEnemSubjectAreas(token)])
+      .then(([subjectsData, areasData]) => {
+        setPracticeSubjects(subjectsData)
         setSubjectAreas(areasData)
+
+        if (subjectsData.length > 0) {
+          setSubjectName(subjectsData[0].name)
+          setQuestionCount(defaultQuestionSelection(subjectsData[0].count))
+        }
+
         if (areasData.length > 0) {
           setSubjectArea(areasData[0].area)
-          setQuestionCount(defaultQuestionSelection(areasData[0].count))
         }
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar matérias'))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar opções'))
       .finally(() => setLoadingMeta(false))
   }, [token, isSubjectPractice])
 
@@ -128,6 +158,33 @@ export function SimuladosHome() {
       setQuestionCount(defaultQuestionSelection(availableCount))
     }
   }, [isSubjectPractice, availableCount, loadableCount, questionCount])
+
+  function handlePracticeFilterChange(nextFilter: SubjectPracticeFilter) {
+    setPracticeFilter(nextFilter)
+
+    if (nextFilter === 'subject') {
+      const next = practiceSubjects.find((item) => item.name === subjectName) ?? practiceSubjects[0]
+      if (next) {
+        setSubjectName(next.name)
+        setQuestionCount(defaultQuestionSelection(next.count))
+      }
+      return
+    }
+
+    const next = subjectAreas.find((item) => item.area === subjectArea) ?? subjectAreas[0]
+    if (next) {
+      setSubjectArea(next.area)
+      setQuestionCount(defaultQuestionSelection(next.count))
+    }
+  }
+
+  function handleSubjectNameChange(nextName: string) {
+    setSubjectName(nextName)
+    const next = practiceSubjects.find((item) => item.name === nextName)
+    if (next) {
+      setQuestionCount(defaultQuestionSelection(next.count))
+    }
+  }
 
   function handleSubjectAreaChange(nextArea: string) {
     setSubjectArea(nextArea)
@@ -166,7 +223,7 @@ export function SimuladosHome() {
       const payload = isSubjectPractice
         ? {
             mode,
-            subjectArea,
+            ...(practiceFilter === 'subject' ? { subjectName } : { subjectArea }),
             questionCount: questionCount === 'all' ? null : questionCount,
             timeLimitSeconds,
           }
@@ -189,7 +246,10 @@ export function SimuladosHome() {
   }
 
   const canStart = isSubjectPractice
-    ? !starting && !loadingMeta && Boolean(subjectArea) && availableCount > 0
+    ? !starting &&
+      !loadingMeta &&
+      availableCount > 0 &&
+      (practiceFilter === 'subject' ? Boolean(subjectName) : Boolean(subjectArea))
     : !starting
 
   if (loading) {
@@ -208,8 +268,8 @@ export function SimuladosHome() {
           Pratique com questões reais do ENEM
         </h1>
         <p className="mt-3 max-w-2xl text-slate-400">
-          Questões oficiais via EnemHub — pratique por tópico ou simule o 1º ou 2º dia completo
-          com questões aleatórias de vários anos.
+          Questões oficiais via EnemHub — pratique por matéria ou tópico, ou simule o 1º ou 2º dia
+          completo com questões aleatórias de vários anos.
         </p>
       </div>
 
@@ -259,25 +319,71 @@ export function SimuladosHome() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {isSubjectPractice && (
               <>
-                <label className="block sm:col-span-2">
-                  <span className="mb-1.5 block text-sm text-slate-300">Matéria</span>
+                <label className="block">
+                  <span className="mb-1.5 block text-sm text-slate-300">Praticar por</span>
                   <select
-                    value={subjectArea}
-                    onChange={(e) => handleSubjectAreaChange(e.target.value)}
-                    disabled={loadingMeta || subjectAreas.length === 0}
+                    value={practiceFilter}
+                    onChange={(e) =>
+                      handlePracticeFilterChange(e.target.value as SubjectPracticeFilter)
+                    }
+                    disabled={loadingMeta}
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
                   >
-                    {loadingMeta ? (
-                      <option value="">Carregando...</option>
-                    ) : (
-                      subjectAreas.map((item) => (
-                        <option key={item.area} value={item.area}>
-                          {item.area} ({item.count})
-                        </option>
-                      ))
-                    )}
+                    <option value="subject">Matéria ENEM</option>
+                    <option value="topic">Tópico específico</option>
                   </select>
                 </label>
+
+                <label className="block sm:col-span-2">
+                  <span className="mb-1.5 block text-sm text-slate-300">
+                    {practiceFilter === 'subject' ? 'Matéria' : 'Tópico'}
+                  </span>
+                  {practiceFilter === 'subject' ? (
+                    <select
+                      value={subjectName}
+                      onChange={(e) => handleSubjectNameChange(e.target.value)}
+                      disabled={loadingMeta || practiceSubjects.length === 0}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                    >
+                      {loadingMeta ? (
+                        <option value="">Carregando...</option>
+                      ) : (
+                        practiceSubjectsByArea.map(([area, subjects]) => (
+                          <optgroup key={area} label={area}>
+                            {subjects.map((item) => (
+                              <option key={item.name} value={item.name}>
+                                {item.name} ({item.count})
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))
+                      )}
+                    </select>
+                  ) : (
+                    <select
+                      value={subjectArea}
+                      onChange={(e) => handleSubjectAreaChange(e.target.value)}
+                      disabled={loadingMeta || subjectAreas.length === 0}
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                    >
+                      {loadingMeta ? (
+                        <option value="">Carregando...</option>
+                      ) : (
+                        subjectAreas.map((item) => (
+                          <option key={item.area} value={item.area}>
+                            {item.area} ({item.count})
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  )}
+                </label>
+
+                {practiceFilter === 'subject' && (
+                  <p className="text-sm text-slate-500 sm:col-span-3">
+                    Questões sorteadas entre vários tópicos e anos da matéria selecionada.
+                  </p>
+                )}
 
                 <label className="block">
                   <span className="mb-1.5 block text-sm text-slate-300">Questões</span>

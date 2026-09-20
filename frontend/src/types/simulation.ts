@@ -50,6 +50,14 @@ export type EnemSubjectArea = {
   count: number
 }
 
+export type EnemPracticeSubject = {
+  name: string
+  count: number
+  knowledgeArea: string | null
+}
+
+export type SubjectPracticeFilter = 'subject' | 'topic'
+
 export type SimulationQuestion = {
   id: string
   year: number
@@ -94,6 +102,7 @@ export type SimulationHistoryItem = SimulationAttempt
 export type StartSimulationPayload = {
   mode: SimulationMode
   subjectArea?: string
+  subjectName?: string
   questionCount?: number | null
   timeLimitSeconds?: number | null
 }

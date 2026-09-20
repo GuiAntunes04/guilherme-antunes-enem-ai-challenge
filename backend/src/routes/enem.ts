@@ -6,6 +6,7 @@ import {
   getIndexCount,
   getIndexedYears,
   getSubjectAreasFromIndex,
+  getSubjectNamesFromIndex,
   getSubjectsFromIndex,
   QuestionIndexNotSyncedError,
   syncQuestionIndex,
@@ -69,6 +70,19 @@ enemRouter.get('/subject-areas', async (_req, res) => {
     const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
     res.status(status).json({
       error: 'Failed to fetch subject areas',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+enemRouter.get('/practice-subjects', async (_req, res) => {
+  try {
+    const subjects = await getSubjectNamesFromIndex()
+    res.json(subjects)
+  } catch (error) {
+    const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
+    res.status(status).json({
+      error: 'Failed to fetch practice subjects',
       message: error instanceof Error ? error.message : 'Unknown error',
     })
   }

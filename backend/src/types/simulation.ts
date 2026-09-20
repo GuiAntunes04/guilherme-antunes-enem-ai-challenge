@@ -41,8 +41,10 @@ export const TIME_ESSAY_SECONDS = 90 * 60
 export type StartSimulationBody = {
   mode: SimulationMode
   examYear?: number
-  /** subject_area from enem_questions_index (subject practice only) */
+  /** subject_area topic path from enem_questions_index (subject practice only) */
   subjectArea?: string
+  /** ENEM discipline name, e.g. Matemática, História (subject practice only) */
+  subjectName?: string
   /** Omit or null = all questions for the subject area */
   questionCount?: number | null
   /** null or 0 = unlimited */
