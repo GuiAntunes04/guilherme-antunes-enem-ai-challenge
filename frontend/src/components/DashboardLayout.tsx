@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { SimulationAnswerSheet } from './simulation/SimulationAnswerSheet'
 import { navItems } from '../config/navigation'
 import { useAuth } from '../contexts/AuthContext'
+import {
+  SimulationQuizProvider,
+  useSimulationQuizSidebarState,
+} from '../contexts/SimulationQuizContext'
 
 function navLinkClass(isActive: boolean) {
   return [
@@ -12,16 +17,19 @@ function navLinkClass(isActive: boolean) {
   ].join(' ')
 }
 
-export function DashboardLayout() {
+function DashboardLayoutContent() {
   const { profile, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const quizSidebar = useSimulationQuizSidebarState()
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-7xl">
         {/* Desktop sidebar */}
-        <aside className="hidden w-64 shrink-0 border-r border-slate-800 md:flex md:flex-col">
-          <div className="border-b border-slate-800 px-6 py-5">
+        <aside className="hidden w-64 shrink-0 border-r border-slate-800 md:sticky md:top-0 md:flex md:h-screen md:flex-col">
+          <div
+            className={`shrink-0 border-b border-slate-800 px-6 ${quizSidebar ? 'py-3' : 'py-5'}`}
+          >
             <Link to="/" className="text-lg font-semibold tracking-tight text-white">
               ENEM Prep AI
             </Link>
@@ -30,7 +38,7 @@ export function DashboardLayout() {
             )}
           </div>
 
-          <nav className="flex-1 space-y-1 p-4">
+          <nav className={`shrink-0 space-y-0.5 ${quizSidebar ? 'px-3 py-2' : 'p-4'}`}>
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -39,12 +47,26 @@ export function DashboardLayout() {
                 className={({ isActive }) => navLinkClass(isActive)}
               >
                 <span className="text-sm font-medium">{item.label}</span>
-                <span className="mt-0.5 text-xs opacity-70">{item.description}</span>
+                {!quizSidebar && (
+                  <span className="mt-0.5 text-xs opacity-70">{item.description}</span>
+                )}
               </NavLink>
             ))}
           </nav>
 
-          <div className="border-t border-slate-800 p-4">
+          {quizSidebar && (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <SimulationAnswerSheet
+                total={quizSidebar.total}
+                currentIndex={quizSidebar.currentIndex}
+                answers={quizSidebar.answers}
+                questionIds={quizSidebar.questionIds}
+                goToQuestion={quizSidebar.goToQuestion}
+              />
+            </div>
+          )}
+
+          <div className={`shrink-0 border-t border-slate-800 ${quizSidebar ? 'p-3' : 'mt-auto p-4'}`}>
             <button
               type="button"
               onClick={() => signOut()}
@@ -88,6 +110,23 @@ export function DashboardLayout() {
                   </NavLink>
                 ))}
               </nav>
+
+              {quizSidebar && (
+                <div className="mt-4 border-t border-slate-800 pt-4">
+                  <SimulationAnswerSheet
+                    compact
+                    total={quizSidebar.total}
+                    currentIndex={quizSidebar.currentIndex}
+                    answers={quizSidebar.answers}
+                    questionIds={quizSidebar.questionIds}
+                    goToQuestion={(index) => {
+                      quizSidebar.goToQuestion(index)
+                      setMenuOpen(false)
+                    }}
+                  />
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => signOut()}
@@ -104,5 +143,13 @@ export function DashboardLayout() {
         </div>
       </div>
     </div>
+  )
+}
+
+export function DashboardLayout() {
+  return (
+    <SimulationQuizProvider>
+      <DashboardLayoutContent />
+    </SimulationQuizProvider>
   )
 }

@@ -584,6 +584,57 @@ simulationsRouter.post('/:id/begin', async (req, res) => {
   res.json({ attempt: mapAttemptRow(raced) })
 })
 
+simulationsRouter.delete('/:id', async (req, res) => {
+  const userId = req.user!.id
+  const attemptId = req.params.id
+
+  const { data: attempt, error } = await supabaseAdmin
+    .from('simulation_attempts')
+    .select('id, finished_at, essay_id')
+    .eq('id', attemptId)
+    .eq('user_id', userId)
+    .single()
+
+  if (error || !attempt) {
+    res.status(404).json({ error: 'Simulation not found' })
+    return
+  }
+
+  if (attempt.finished_at) {
+    res.status(400).json({
+      error: 'Cannot delete finished simulation',
+      message: 'Apenas simulados em andamento podem ser excluídos.',
+    })
+    return
+  }
+
+  if (attempt.essay_id) {
+    const { error: essayError } = await supabaseAdmin
+      .from('essays')
+      .delete()
+      .eq('id', attempt.essay_id)
+      .eq('user_id', userId)
+
+    if (essayError) {
+      res.status(500).json({ error: 'Failed to delete essay', message: essayError.message })
+      return
+    }
+  }
+
+  const { error: deleteError } = await supabaseAdmin
+    .from('simulation_attempts')
+    .delete()
+    .eq('id', attemptId)
+    .eq('user_id', userId)
+
+  if (deleteError) {
+    res.status(500).json({ error: 'Failed to delete simulation', message: deleteError.message })
+    return
+  }
+
+  res.status(204).send()
+})
+
 simulationsRouter.post('/:id/submit', async (req, res) => {
 
   const userId = req.user!.id

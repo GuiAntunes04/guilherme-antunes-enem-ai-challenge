@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { QuestionCard } from '../../components/simulation/QuestionCard'
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../components/simulation/SimulationTimer'
 import { TutorChatPanel } from '../../components/tutor/TutorChatPanel'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSimulationQuizSidebar } from '../../contexts/SimulationQuizContext'
 import {
   beginSimulationQuiz,
   fetchSimulation,
@@ -210,6 +211,24 @@ export function SimulationQuizPage() {
     expiredRef.current = true
     void submitAnswers(true)
   }, [submitAnswers])
+
+  const goToQuestion = useCallback((index: number) => {
+    setCurrentIndex(index)
+  }, [])
+
+  const sidebarState = useMemo(() => {
+    if (loading || questions.length === 0) return null
+
+    return {
+      total: questions.length,
+      currentIndex,
+      answers,
+      questionIds: questions.map((question) => question.id),
+      goToQuestion,
+    }
+  }, [loading, questions, currentIndex, answers, goToQuestion])
+
+  useSimulationQuizSidebar(sidebarState)
 
   const currentQuestion = questions[currentIndex]
   const answeredCount = Object.keys(answers).length

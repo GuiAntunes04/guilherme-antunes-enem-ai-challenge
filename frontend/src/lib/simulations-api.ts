@@ -167,6 +167,16 @@ export async function fetchSimulation(
   return response.json() as Promise<SimulationDetailResponse>
 }
 
+export async function deleteSimulation(token: string, attemptId: string): Promise<void> {
+  const response = await authFetch(`/api/simulations/${attemptId}`, token, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao excluir simulado')
+  }
+}
+
 export async function submitSimulation(
   token: string,
   attemptId: string,

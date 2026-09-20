@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
+  deleteSimulation,
   fetchEnemSubjectAreas,
   fetchSimulationHistory,
   startSimulation,
@@ -58,6 +59,7 @@ export function SimuladosHome() {
   const [loading, setLoading] = useState(true)
   const [loadingMeta, setLoadingMeta] = useState(false)
   const [starting, setStarting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const isSubjectPractice = mode === 'subject_practice'
@@ -132,6 +134,27 @@ export function SimuladosHome() {
     const next = subjectAreas.find((item) => item.area === nextArea)
     if (next) {
       setQuestionCount(defaultQuestionSelection(next.count))
+    }
+  }
+
+  async function handleDeleteInProgress(attemptId: string) {
+    if (!token || deletingId) return
+
+    const confirmed = window.confirm(
+      'Excluir este simulado em andamento? O progresso será perdido.',
+    )
+    if (!confirmed) return
+
+    setDeletingId(attemptId)
+    setError(null)
+
+    try {
+      await deleteSimulation(token, attemptId)
+      setInProgress((prev) => prev.filter((item) => item.id !== attemptId))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir simulado')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -330,22 +353,38 @@ export function SimuladosHome() {
           <h2 className="text-lg font-semibold text-white">Em andamento</h2>
           <div className="mt-4 space-y-3">
             {inProgress.map((item) => (
-              <Link
+              <div
                 key={item.id}
-                to={getContinuePath(item)}
-                className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 px-5 py-4 transition hover:border-amber-400/50"
+                className="flex items-stretch overflow-hidden rounded-xl border border-amber-500/30 bg-amber-500/5 transition hover:border-amber-400/50"
               >
-                <div>
-                  <p className="font-medium text-white">
-                    {item.attemptTitle ?? (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
-                    — {item.disciplineLabel ?? item.discipline}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Iniciado em {new Date(item.started_at).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-                <span className="text-sm font-medium text-amber-300">Continuar</span>
-              </Link>
+                <Link
+                  to={getContinuePath(item)}
+                  className="flex min-w-0 flex-1 items-center justify-between px-5 py-4"
+                >
+                  <div>
+                    <p className="font-medium text-white">
+                      {item.attemptTitle ??
+                        (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
+                      — {item.disciplineLabel ?? item.discipline}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Iniciado em {new Date(item.started_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <span className="ml-4 shrink-0 text-sm font-medium text-amber-300">
+                    Continuar
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  aria-label="Excluir simulado em andamento"
+                  disabled={deletingId === item.id}
+                  onClick={() => void handleDeleteInProgress(item.id)}
+                  className="shrink-0 border-l border-amber-500/20 px-4 text-sm text-slate-400 transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                >
+                  {deletingId === item.id ? '...' : 'Excluir'}
+                </button>
+              </div>
             ))}
           </div>
         </section>
