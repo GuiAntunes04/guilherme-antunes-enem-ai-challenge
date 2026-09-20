@@ -35,14 +35,20 @@ function isLikelyInlineFormula(img: Element): boolean {
   if (height !== null) return height <= INLINE_FORMULA_MAX_HEIGHT
 
   const parent = img.parentElement
-  if (parent?.tagName === 'P') {
-    if (hasTextBesidesImages(parent)) return true
-    if (parent.querySelectorAll('img').length === 1 && !parent.textContent?.trim()) {
-      return true
-    }
+  if (parent?.tagName === 'P' && hasTextBesidesImages(parent)) {
+    if (width === null && height === null) return false
+    return (
+      (width === null || width <= INLINE_FORMULA_MAX_WIDTH) &&
+      (height === null || height <= INLINE_FORMULA_MAX_HEIGHT)
+    )
   }
 
   return false
+}
+
+function prepareDiagramImage(img: HTMLImageElement): void {
+  img.removeAttribute('width')
+  img.removeAttribute('height')
 }
 
 /** Wrap diagram images in <figure> so they are not styled as inline math. */
@@ -65,17 +71,20 @@ function normalizeStatementHtml(html: string): string {
     if (parent.tagName === 'P') {
       if (!hasTextBesidesImages(parent) && parent.querySelectorAll('img').length === 1) {
         parent.replaceWith(figure)
+        prepareDiagramImage(img)
         figure.appendChild(img)
         continue
       }
 
       parent.removeChild(img)
       parent.insertAdjacentElement('afterend', figure)
+      prepareDiagramImage(img)
       figure.appendChild(img)
       continue
     }
 
     parent.insertBefore(figure, img)
+    prepareDiagramImage(img)
     figure.appendChild(img)
   }
 
@@ -104,7 +113,7 @@ const inlineFormulaStyles =
   '[&_p_img]:mx-0.5 [&_p_img]:inline [&_p_img]:max-h-[1.25em] [&_p_img]:align-middle [&_p_img]:rounded-none [&_p_img]:border-0 [&_p_img]:invert [&_p_img]:hue-rotate-180'
 
 const diagramFigureStyles =
-  '[&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-auto [&_figure_img]:max-w-full [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-slate-700'
+  '[&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-[28rem] [&_figure_img]:w-full [&_figure_img]:max-w-xl [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-slate-700'
 
 export function QuestionStatement({ html }: QuestionStatementProps) {
   const sanitized = useMemo(() => prepareStatement(html), [html])
