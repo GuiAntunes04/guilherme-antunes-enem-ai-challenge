@@ -39,6 +39,20 @@ async function parseError(response: Response, fallback: string): Promise<never> 
   throw new Error(body?.message ?? body?.error ?? fallback)
 }
 
+export async function fetchEssays(
+  token: string,
+  source: 'redacao' | 'simulation' = 'redacao',
+): Promise<{ essays: Essay[] }> {
+  const params = new URLSearchParams({ source })
+  const response = await authFetch(`/api/essays?${params}`, token)
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao carregar redações')
+  }
+
+  return response.json() as Promise<{ essays: Essay[] }>
+}
+
 export async function startEssay(
   token: string,
   options: { timeLimitSeconds?: number | null } = {},

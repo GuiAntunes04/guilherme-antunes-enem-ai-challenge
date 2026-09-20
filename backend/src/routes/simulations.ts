@@ -126,24 +126,22 @@ function computeElapsedSeconds(
 simulationsRouter.get('/', async (req, res) => {
 
   const userId = req.user!.id
+  const status = String(req.query.status ?? 'finished')
 
-
-
-  const { data, error } = await supabaseAdmin
-
+  let query = supabaseAdmin
     .from('simulation_attempts')
-
     .select(
-
-      'id, exam_year, discipline, mode, years_used, score, total, started_at, finished_at, elapsed_seconds',
-
+      'id, exam_year, discipline, mode, years_used, score, total, started_at, finished_at, elapsed_seconds, essay_id',
     )
-
     .eq('user_id', userId)
 
-    .not('finished_at', 'is', null)
+  if (status === 'in_progress') {
+    query = query.is('finished_at', null).order('started_at', { ascending: false })
+  } else {
+    query = query.not('finished_at', 'is', null).order('finished_at', { ascending: false })
+  }
 
-    .order('finished_at', { ascending: false })
+  const { data, error } = await query
 
 
 
@@ -638,6 +636,14 @@ simulationsRouter.post('/:id/submit', async (req, res) => {
 
     return
 
+  }
+
+  if (attempt.mode === 'essay') {
+    res.status(400).json({
+      error: 'Essay simulations must be submitted via essay evaluation',
+      message: 'Use POST /api/essays/:id/evaluate para finalizar simulados de redação.',
+    })
+    return
   }
 
 

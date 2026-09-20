@@ -4,12 +4,20 @@
 
 1. Abra o [Supabase Dashboard](https://supabase.com/dashboard) do seu projeto
 2. Vá em **SQL Editor** → **New query**
-3. Cole e execute, nesta ordem:
-   - `migrations/20250917100000_initial_schema.sql`
-   - `migrations/20250917200000_add_question_indices.sql` (legado — substituída pela próxima)
-   - `migrations/20250918100000_enemhub_question_ids.sql`
-   - `migrations/20250918200000_simulation_modes_and_timer.sql`
-   - `migrations/20250918300000_enem_questions_index.sql`
+3. Cole e execute, **nesta ordem**:
+
+| # | Arquivo |
+|---|---------|
+| 1 | `migrations/20250917100000_initial_schema.sql` |
+| 2 | `migrations/20250917200000_add_question_indices.sql` (legado) |
+| 3 | `migrations/20250918100000_enemhub_question_ids.sql` |
+| 4 | `migrations/20250918200000_simulation_modes_and_timer.sql` |
+| 5 | `migrations/20250918300000_enem_questions_index.sql` |
+| 6 | `migrations/20250919100000_tutor_simulation_context.sql` |
+| 7 | `migrations/20250919110000_quiz_started_at.sql` |
+| 8 | `migrations/20250919200000_essay_simulation.sql` |
+
+> A migration `20250919200000` usa `drop policy if exists` antes de recriar a policy de update em `essays`, permitindo reexecução segura no Supabase Preview.
 
 ## Tabelas criadas
 

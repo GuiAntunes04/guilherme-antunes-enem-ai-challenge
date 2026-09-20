@@ -50,6 +50,7 @@ export function SimuladosHome() {
 
   const [subjectAreas, setSubjectAreas] = useState<EnemSubjectArea[]>([])
   const [history, setHistory] = useState<SimulationHistoryItem[]>([])
+  const [inProgress, setInProgress] = useState<SimulationHistoryItem[]>([])
   const [mode, setMode] = useState<SimulationMode>('subject_practice')
   const [subjectArea, setSubjectArea] = useState('')
   const [questionCount, setQuestionCount] = useState<number | 'all'>(10)
@@ -75,11 +76,24 @@ export function SimuladosHome() {
   useEffect(() => {
     if (!token) return
 
-    fetchSimulationHistory(token)
-      .then(setHistory)
+    Promise.all([
+      fetchSimulationHistory(token, 'finished'),
+      fetchSimulationHistory(token, 'in_progress'),
+    ])
+      .then(([finished, active]) => {
+        setHistory(finished)
+        setInProgress(active)
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar'))
       .finally(() => setLoading(false))
   }, [token])
+
+  function getContinuePath(item: SimulationHistoryItem): string {
+    if (item.mode === 'essay') {
+      return `/simulados/${item.id}/redacao`
+    }
+    return `/simulados/${item.id}`
+  }
 
   useEffect(() => {
     if (!token || !isSubjectPractice) return
@@ -310,6 +324,32 @@ export function SimuladosHome() {
             : 'Iniciar simulado'}
         </button>
       </section>
+
+      {inProgress.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold text-white">Em andamento</h2>
+          <div className="mt-4 space-y-3">
+            {inProgress.map((item) => (
+              <Link
+                key={item.id}
+                to={getContinuePath(item)}
+                className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 px-5 py-4 transition hover:border-amber-400/50"
+              >
+                <div>
+                  <p className="font-medium text-white">
+                    {item.attemptTitle ?? (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
+                    — {item.disciplineLabel ?? item.discipline}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Iniciado em {new Date(item.started_at).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                <span className="text-sm font-medium text-amber-300">Continuar</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="text-lg font-semibold text-white">Histórico</h2>

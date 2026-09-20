@@ -83,8 +83,10 @@ export async function fetchEnemSubjectAreas(token: string): Promise<EnemSubjectA
 
 export async function fetchSimulationHistory(
   token: string,
+  status: 'finished' | 'in_progress' = 'finished',
 ): Promise<SimulationHistoryItem[]> {
-  const response = await authFetch('/api/simulations', token)
+  const params = new URLSearchParams({ status })
+  const response = await authFetch(`/api/simulations?${params}`, token)
 
   if (!response.ok) {
     await parseError(response, 'Falha ao carregar histórico')

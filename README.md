@@ -4,20 +4,39 @@ Plataforma web de estudos para o ENEM — desafio de estágio [Hyperflow](https:
 
 ## Demo
 
-> Deploy em breve.
-
 | Ambiente | URL |
 |----------|-----|
-| Frontend (Vercel) | _pendente_ |
-| Backend (Render) | _pendente_ |
+| **Frontend (Vercel)** | _Configure após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
+| **Backend (Render)** | _Configure após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
+
+> Siga o guia em [`DEPLOY.md`](DEPLOY.md) para publicar frontend e backend. Após o deploy, substitua as URLs acima.
 
 ## Sobre o projeto
 
 O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ensino Médio com:
 
-- **Simulados** com questões reais de provas anteriores, consumidas via [EnemHub API](https://docs.enemhub.com.br/enem/exemplos)
-- **Tutor IA** (Google Gemini) para tirar dúvidas de matérias e conteúdos
-- **Corretor de redação** com feedback baseado nas 5 competências do ENEM
+- **Simulados** com questões reais de provas anteriores (EnemHub), incluindo 1º dia, 2º dia, matéria específica e redação cronometrada
+- **Tutor IA** (Google Gemini) para tirar dúvidas durante simulados ou em chat livre
+- **Corretor de redação** com feedback nas 5 competências do ENEM, geração de temas e importação por foto/documento
+
+## Uso da Inteligência Artificial
+
+| Feature | Modelo | O que faz |
+|---------|--------|-----------|
+| **Tutor IA** | Gemini | Responde dúvidas em chat livre ou contextualizadas por questão do simulado (enunciado + alternativas) |
+| **Tema de redação** | Gemini | Gera proposta dissertativa com textos motivadores no estilo ENEM |
+| **Correção de redação** | Gemini | Avalia C1–C5 (0–200 cada) e nota total 0–1000 com comentários |
+| **Import OCR** | Gemini | Extrai texto de fotos/PDFs/DOCX enviados pelo estudante |
+
+## Screenshots
+
+Adicione capturas em [`docs/screenshots/`](docs/screenshots/) antes da entrega:
+
+- Login e registro
+- Dashboard com estatísticas
+- Simulado em andamento (com tutor lateral)
+- Tutor IA com markdown/LaTeX
+- Corretor de redação com feedback por competência
 
 ## Stack
 
@@ -25,16 +44,20 @@ O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ens
 |--------|------------|
 | Frontend | React, Vite, Tailwind CSS, TypeScript |
 | Backend | Node.js, Express, TypeScript |
-| Banco | Supabase (PostgreSQL) |
+| Banco | Supabase (PostgreSQL + Auth + RLS) |
 | IA | Google Gemini API |
+| Questões | EnemHub API |
 | Deploy | Vercel (frontend) + Render (backend) |
 
 ## Estrutura do repositório
 
 ```
-├── frontend/     # React + Vite + Tailwind
-├── backend/      # Express + TypeScript
-└── supabase/     # Migrations SQL (Fase 1)
+├── frontend/       # React + Vite + Tailwind
+├── backend/        # Express + TypeScript
+├── supabase/       # Migrations SQL
+├── docs/           # Screenshots e documentação visual
+├── render.yaml     # Blueprint Render (backend)
+└── DEPLOY.md       # Guia de deploy
 ```
 
 ## Como rodar localmente
@@ -43,9 +66,9 @@ O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ens
 
 - Node.js 20+
 - npm
-- Conta no [Supabase](https://supabase.com) (Fase 1)
-- API Key da [EnemHub](https://docs.enemhub.com.br/enem/quickstart) (simulados)
-- API Key do [Google AI Studio](https://aistudio.google.com/) (Fase 5)
+- Conta no [Supabase](https://supabase.com)
+- API Key da [EnemHub](https://docs.enemhub.com.br/enem/quickstart)
+- API Key do [Google AI Studio](https://aistudio.google.com/)
 
 ### Backend
 
@@ -56,14 +79,16 @@ npm install
 npm run dev
 ```
 
-Preencha no `backend/.env` (Supabase → Project Settings → API):
+Preencha no `backend/.env`:
 
-| Variável | Origem no Supabase |
-|----------|-------------------|
-| `SUPABASE_URL` | Project URL |
+| Variável | Descrição |
+|----------|-----------|
+| `SUPABASE_URL` | Project URL (Supabase → Settings → API) |
 | `SUPABASE_SECRET_KEY` | Secret key (somente backend) |
-| `SUPABASE_JWKS_URL` | JWKS URL (validação de JWT) |
-| `ENEMHUB_API_KEY` | API Key do produto ENEM ([EnemHub](https://platform.enemhub.com.br)) |
+| `SUPABASE_JWKS_URL` | `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` |
+| `GEMINI_API_KEY` | Google AI Studio |
+| `ENEMHUB_API_KEY` | EnemHub ENEM product |
+| `FRONTEND_URL` | `http://localhost:5173` (pode ser lista separada por vírgula) |
 
 O servidor sobe em `http://localhost:3001`.
 
@@ -76,45 +101,36 @@ npm install
 npm run dev
 ```
 
-Preencha no `frontend/.env`:
-
-| Variável | Origem no Supabase |
-|----------|-------------------|
+| Variável | Descrição |
+|----------|-----------|
 | `VITE_SUPABASE_URL` | Project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key (segura no browser) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
+| `VITE_API_URL` | `http://localhost:3001` |
 
 A aplicação abre em `http://localhost:5173`.
 
 ### Banco de dados (Supabase)
 
-Após configurar o `.env`, aplique a migration inicial:
-
-1. Supabase Dashboard → **SQL Editor**
-2. Cole o arquivo `supabase/migrations/20250917100000_initial_schema.sql`
-3. Execute a query
-
-Instruções detalhadas em [`supabase/README.md`](supabase/README.md).
+Aplique **todas** as migrations na ordem listada em [`supabase/README.md`](supabase/README.md) (8 arquivos SQL).
 
 ### Índice de questões (sync único)
 
-Após aplicar as migrations, sincronize os metadados das questões EnemHub para o Supabase:
+Após as migrations:
 
 ```bash
 cd backend
 npm run sync:questions
 ```
 
-Isso indexa ~4.800 questões (id, ano, matéria, área, dificuldade). O conteúdo completo (`statement`, alternativas) continua sendo buscado na EnemHub sob demanda.
+Indexa ~4.800 questões (metadados). O conteúdo completo é buscado na EnemHub sob demanda durante simulados.
 
 Alternativa via API (autenticado): `POST /api/enem/sync`
 
-### Testar autenticação (após Fase 2)
-
-Com um JWT válido do Supabase Auth:
+### Testes
 
 ```bash
-curl http://localhost:3001/api/me \
-  -H "Authorization: Bearer SEU_TOKEN"
+cd backend
+npm test
 ```
 
 ## Roadmap de desenvolvimento
@@ -124,21 +140,16 @@ curl http://localhost:3001/api/me \
 - [x] **Fase 2** — Autenticação (login, registro, sessão)
 - [x] **Fase 3** — Dashboard do estudante
 - [x] **Fase 4** — Simulados com EnemHub API + histórico
-- [ ] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
-- [ ] **Fase 6** — Deploy (Vercel + Render) + README final
+- [x] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
+- [ ] **Fase 6** — Deploy (Vercel + Render) + README final com URLs e screenshots
 
 ## EnemHub API
 
-Questões oficiais são obtidas via proxy no backend a partir de `https://api.enemhub.com.br/v1/enem/questions`.
-
-Principais endpoints utilizados:
-
-- `GET /v1/enem/questions?year=&page=&limit=` — listar questões (paginação até 100/página)
-- `GET /v1/enem/questions/:id` — buscar questão por UUID
+Questões oficiais via proxy no backend: `https://api.enemhub.com.br/v1/enem/questions`.
 
 Documentação: [docs.enemhub.com.br](https://docs.enemhub.com.br/enem/exemplos)
 
-> Plano Free: 5.000 requisições/mês. Metadados ficam no Supabase (`enem_questions_index`); o sync consome ~50 requests uma única vez. Durante simulados, só se busca o conteúdo das questões selecionadas.
+> Plano Free: 5.000 requisições/mês. O sync inicial consome ~50 requests uma única vez.
 
 ## Licença
 

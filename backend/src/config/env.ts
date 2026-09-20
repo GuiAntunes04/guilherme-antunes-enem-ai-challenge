@@ -8,10 +8,19 @@ function requireEnv(name: string): string {
   return value
 }
 
+function parseFrontendOrigins(): string[] {
+  const raw = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+  return raw
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+}
+
 export const env = {
   port: Number(process.env.PORT ?? 3001),
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  frontendOrigins: parseFrontendOrigins(),
+  frontendUrl: parseFrontendOrigins()[0] ?? 'http://localhost:5173',
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
   supabaseJwksUrl: process.env.SUPABASE_JWKS_URL,

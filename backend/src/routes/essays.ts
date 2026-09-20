@@ -33,6 +33,32 @@ async function loadEssayForUser(essayId: string, userId: string): Promise<EssayR
   return data as EssayRow
 }
 
+essaysRouter.get('/', async (req, res) => {
+  const userId = req.user!.id
+  const source = req.query.source as EssaySource | undefined
+
+  let query = supabaseAdmin
+    .from('essays')
+    .select(ESSAY_FIELDS)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (source === 'redacao' || source === 'simulation') {
+    query = query.eq('source', source)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    res.status(500).json({ error: 'Failed to load essays', message: error.message })
+    return
+  }
+
+  res.json({
+    essays: (data ?? []).map((row) => mapEssay(row as EssayRow)),
+  })
+})
+
 async function finalizeLinkedSimulationAttempt(
   essayId: string,
   userId: string,
