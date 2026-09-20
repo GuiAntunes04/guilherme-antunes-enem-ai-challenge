@@ -15,10 +15,30 @@ export type MeResponse = {
   profile: Profile
 }
 
+export type SubjectPerformance = {
+  subject: string
+  area: string
+  correct: number
+  total: number
+  accuracy: number
+}
+
+export type SimulationTrendPoint = {
+  id: string
+  label: string
+  finishedAt: string
+  score: number
+  total: number
+  accuracy: number
+  mode: string
+}
+
 export type StatsResponse = {
   simulations: number
   essays: number
   tutorSessions: number
+  subjectPerformance: SubjectPerformance[]
+  simulationTrend: SimulationTrendPoint[]
 }
 
 export async function fetchMe(accessToken: string): Promise<MeResponse> {
@@ -51,5 +71,11 @@ export async function fetchStats(accessToken: string): Promise<StatsResponse> {
     throw new Error('Falha ao carregar estatísticas')
   }
 
-  return response.json() as Promise<StatsResponse>
+  const body = (await response.json()) as StatsResponse
+
+  return {
+    ...body,
+    subjectPerformance: body.subjectPerformance ?? [],
+    simulationTrend: body.simulationTrend ?? [],
+  }
 }

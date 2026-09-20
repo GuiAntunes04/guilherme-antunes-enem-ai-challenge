@@ -1,13 +1,14 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { buildDashboardStats } from '../services/stats-aggregator.js'
 
 export const statsRouter = Router()
 
 statsRouter.get('/', requireAuth, async (req, res) => {
   const userId = req.user!.id
 
-  const [simulations, essays, tutorSessions] = await Promise.all([
+  const [simulations, essays, tutorSessions, dashboard] = await Promise.all([
     supabaseAdmin
       .from('simulation_attempts')
       .select('id', { count: 'exact', head: true })
@@ -21,6 +22,7 @@ statsRouter.get('/', requireAuth, async (req, res) => {
       .from('tutor_sessions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId),
+    buildDashboardStats(userId),
   ])
 
   if (simulations.error || essays.error || tutorSessions.error) {
@@ -38,5 +40,7 @@ statsRouter.get('/', requireAuth, async (req, res) => {
     simulations: simulations.count ?? 0,
     essays: essays.count ?? 0,
     tutorSessions: tutorSessions.count ?? 0,
+    subjectPerformance: dashboard.subjectPerformance,
+    simulationTrend: dashboard.simulationTrend,
   })
 })
