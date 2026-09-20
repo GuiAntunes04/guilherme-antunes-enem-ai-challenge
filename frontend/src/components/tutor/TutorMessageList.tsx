@@ -4,14 +4,20 @@ import { TutorMessageContent } from './TutorMessageContent'
 type TutorMessageListProps = {
   messages: TutorMessage[]
   sending?: boolean
+  mode?: 'general' | 'simulation'
 }
 
-export function TutorMessageList({ messages, sending = false }: TutorMessageListProps) {
+export function TutorMessageList({
+  messages,
+  sending = false,
+  mode = 'general',
+}: TutorMessageListProps) {
   if (messages.length === 0 && !sending) {
     return (
       <p className="text-sm text-slate-500">
-        Faça uma pergunta sobre a questão ou o conteúdo. O tutor não revelará a resposta correta
-        durante o simulado.
+        {mode === 'simulation'
+          ? 'Faça uma pergunta sobre a questão ou o conteúdo. O tutor não revelará a resposta correta durante o simulado.'
+          : 'Faça uma pergunta sobre matérias, conteúdos ou estratégias de estudo para o ENEM.'}
       </p>
     )
   }

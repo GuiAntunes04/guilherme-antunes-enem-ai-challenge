@@ -101,6 +101,16 @@ export async function fetchTutorMessages(
   return response.json() as Promise<TutorMessagesResponse>
 }
 
+export async function deleteTutorSession(token: string, sessionId: string): Promise<void> {
+  const response = await authFetch(`/api/tutor/sessions/${sessionId}`, token, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok && response.status !== 204) {
+    await parseError(response, 'Falha ao excluir conversa')
+  }
+}
+
 export async function sendTutorMessage(
   token: string,
   sessionId: string,

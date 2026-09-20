@@ -6,7 +6,7 @@ import {
   sendTutorMessage,
 } from '../../lib/tutor-api'
 import type { SimulationQuestion } from '../../types/simulation'
-import type { TutorMessage } from '../../types/tutor'
+import type { TutorMessage, TutorSession } from '../../types/tutor'
 import { TutorComposer } from './TutorComposer'
 import { TutorMessageList } from './TutorMessageList'
 
@@ -17,6 +17,7 @@ type TutorChatPanelProps = {
   question?: SimulationQuestion
   title?: string
   compact?: boolean
+  onSessionUpdated?: (session: TutorSession) => void
 }
 
 export function TutorChatPanel({
@@ -26,6 +27,7 @@ export function TutorChatPanel({
   question,
   title,
   compact = false,
+  onSessionUpdated,
 }: TutorChatPanelProps) {
   const { session } = useAuth()
   const token = session?.access_token ?? ''
@@ -127,6 +129,7 @@ export function TutorChatPanel({
         )
         return [...withoutOptimistic, ...newMessages]
       })
+      onSessionUpdated?.(response.session)
     } catch (err) {
       setMessages((prev) => prev.filter((message) => message.id !== optimisticUserMessage.id))
       setError(err instanceof Error ? err.message : 'Erro ao enviar mensagem')
@@ -135,9 +138,7 @@ export function TutorChatPanel({
     }
   }
 
-  const panelTitle =
-    title ??
-    (mode === 'simulation' ? 'Tutor IA — questão atual' : 'Tutor IA')
+  const showPanelHeader = mode === 'simulation' || Boolean(title)
 
   return (
     <aside
@@ -145,20 +146,24 @@ export function TutorChatPanel({
         compact ? 'p-4' : 'p-5'
       } ${mode === 'simulation' ? 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-6rem)]' : 'h-full min-h-[420px]'}`}
     >
-      <div className="mb-4">
-        <h2 className="text-base font-semibold text-white">{panelTitle}</h2>
-        {mode === 'simulation' && question && (
-          <p className="mt-1 text-xs text-slate-500">
-            {question.subjectName ?? 'Questão'} — ENEM {question.year}
-          </p>
-        )}
-      </div>
+      {showPanelHeader && (
+        <div className="mb-4">
+          <h2 className="text-base font-semibold text-white">
+            {title ?? 'Tutor IA — questão atual'}
+          </h2>
+          {mode === 'simulation' && question && (
+            <p className="mt-1 text-xs text-slate-500">
+              {question.subjectName ?? 'Questão'} — ENEM {question.year}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mb-4 flex-1 overflow-y-auto pr-1">
         {loading ? (
           <p className="text-sm text-slate-400">Carregando conversa...</p>
         ) : (
-          <TutorMessageList messages={messages} sending={sending} />
+          <TutorMessageList messages={messages} sending={sending} mode={mode} />
         )}
         <div ref={messagesEndRef} />
       </div>

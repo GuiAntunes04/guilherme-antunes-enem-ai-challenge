@@ -23,5 +23,6 @@ export type TutorMessagesResponse = {
 
 export type SendTutorMessageResponse = {
   reply: string
+  session: TutorSession
   messages: TutorMessage[]
 }

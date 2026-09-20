@@ -14,9 +14,7 @@ export function TutorComposer({
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-
+  async function submitMessage() {
     const trimmed = content.trim()
     if (!trimmed || disabled || sending) return
 
@@ -29,11 +27,22 @@ export function TutorComposer({
     }
   }
 
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    void submitMessage()
+  }
+
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <textarea
         value={content}
         onChange={(event) => setContent(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault()
+            void submitMessage()
+          }
+        }}
         placeholder={placeholder}
         disabled={disabled || sending}
         rows={2}

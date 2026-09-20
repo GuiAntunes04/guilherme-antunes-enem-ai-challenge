@@ -44,6 +44,21 @@ function mapSession(row: TutorSessionRow) {
   }
 }
 
+const DEFAULT_SESSION_TITLE = 'Nova conversa'
+const SESSION_TITLE_MAX_LENGTH = 60
+
+function buildSessionTitleFromMessage(content: string): string {
+  const singleLine = content.replace(/\s+/g, ' ').trim()
+  if (!singleLine) return DEFAULT_SESSION_TITLE
+  if (singleLine.length <= SESSION_TITLE_MAX_LENGTH) return singleLine
+  return `${singleLine.slice(0, SESSION_TITLE_MAX_LENGTH - 1)}…`
+}
+
+function shouldReplaceDefaultTitle(title: string | null): boolean {
+  const normalized = title?.trim()
+  return !normalized || normalized === DEFAULT_SESSION_TITLE
+}
+
 function mapMessage(row: TutorMessageRow) {
   return {
     id: row.id,
@@ -132,7 +147,7 @@ tutorRouter.post('/sessions', async (req, res) => {
     .from('tutor_sessions')
     .insert({
       user_id: userId,
-      title: title || 'Nova conversa',
+      title: title || DEFAULT_SESSION_TITLE,
     })
     .select('*')
     .single()
@@ -221,6 +236,35 @@ tutorRouter.post('/sessions/simulation', async (req, res) => {
       message: error instanceof Error ? error.message : 'Unknown error',
     })
   }
+})
+
+tutorRouter.delete('/sessions/:id', async (req, res) => {
+  const userId = req.user!.id
+  const sessionId = req.params.id
+
+  const session = await loadSessionForUser(sessionId, userId)
+  if (!session) {
+    res.status(404).json({ error: 'Tutor session not found' })
+    return
+  }
+
+  if (session.simulation_attempt_id) {
+    res.status(400).json({ error: 'Simulation tutor sessions cannot be deleted from here' })
+    return
+  }
+
+  const { error } = await supabaseAdmin
+    .from('tutor_sessions')
+    .delete()
+    .eq('id', sessionId)
+    .eq('user_id', userId)
+
+  if (error) {
+    res.status(500).json({ error: 'Failed to delete tutor session', message: error.message })
+    return
+  }
+
+  res.status(204).send()
 })
 
 tutorRouter.get('/sessions/:id/messages', async (req, res) => {
@@ -323,13 +367,35 @@ tutorRouter.post('/sessions/:id/messages', async (req, res) => {
       return
     }
 
-    await supabaseAdmin
+    const now = new Date().toISOString()
+    const sessionUpdates: { updated_at: string; title?: string } = { updated_at: now }
+
+    if (
+      !session.simulation_attempt_id &&
+      shouldReplaceDefaultTitle(session.title) &&
+      existingMessages.length === 0
+    ) {
+      sessionUpdates.title = buildSessionTitleFromMessage(content)
+    }
+
+    const { data: updatedSession, error: sessionUpdateError } = await supabaseAdmin
       .from('tutor_sessions')
-      .update({ updated_at: new Date().toISOString() })
+      .update(sessionUpdates)
       .eq('id', sessionId)
+      .select('*')
+      .single()
+
+    if (sessionUpdateError || !updatedSession) {
+      res.status(500).json({
+        error: 'Failed to update tutor session',
+        message: sessionUpdateError?.message,
+      })
+      return
+    }
 
     res.status(201).json({
       reply,
+      session: mapSession(updatedSession as TutorSessionRow),
       messages: (savedMessages as TutorMessageRow[]).map(mapMessage),
     })
   } catch (error) {

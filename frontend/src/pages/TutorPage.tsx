@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TutorChatPanel } from '../components/tutor/TutorChatPanel'
 import { useAuth } from '../contexts/AuthContext'
-import { createTutorSession, fetchTutorSessions } from '../lib/tutor-api'
+import {
+  createTutorSession,
+  deleteTutorSession,
+  fetchTutorSessions,
+} from '../lib/tutor-api'
 import type { TutorSession } from '../types/tutor'
 
 function formatSessionDate(value: string): string {
@@ -13,6 +17,12 @@ function formatSessionDate(value: string): string {
   })
 }
 
+function sortSessions(items: TutorSession[]): TutorSession[] {
+  return [...items].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  )
+}
+
 export function TutorPage() {
   const { session } = useAuth()
   const token = session?.access_token ?? ''
@@ -21,6 +31,7 @@ export function TutorPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -28,14 +39,21 @@ export function TutorPage() {
 
     fetchTutorSessions(token)
       .then((data) => {
-        setSessions(data)
-        if (data.length > 0) {
-          setActiveSessionId((current) => current ?? data[0].id)
+        const sorted = sortSessions(data)
+        setSessions(sorted)
+        if (sorted.length > 0) {
+          setActiveSessionId((current) => current ?? sorted[0].id)
         }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar sessões'))
       .finally(() => setLoading(false))
   }, [token])
+
+  const handleSessionUpdated = useCallback((updated: TutorSession) => {
+    setSessions((prev) =>
+      sortSessions(prev.map((item) => (item.id === updated.id ? updated : item))),
+    )
+  }, [])
 
   async function handleNewSession() {
     if (!token || creating) return
@@ -45,12 +63,38 @@ export function TutorPage() {
 
     try {
       const created = await createTutorSession(token)
-      setSessions((prev) => [created, ...prev])
+      setSessions((prev) => sortSessions([created, ...prev]))
       setActiveSessionId(created.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar sessão')
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function handleDeleteSession(sessionId: string) {
+    if (!token || deletingId) return
+
+    const confirmed = window.confirm('Excluir esta conversa? Esta ação não pode ser desfeita.')
+    if (!confirmed) return
+
+    setDeletingId(sessionId)
+    setError(null)
+
+    try {
+      await deleteTutorSession(token, sessionId)
+      setSessions((prev) => {
+        const next = prev.filter((item) => item.id !== sessionId)
+        setActiveSessionId((current) => {
+          if (current !== sessionId) return current
+          return next[0]?.id ?? null
+        })
+        return next
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir conversa')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -95,23 +139,36 @@ export function TutorPage() {
                 const isActive = item.id === activeSessionId
 
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    onClick={() => setActiveSessionId(item.id)}
-                    className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                    className={`flex items-start gap-1 rounded-lg border transition ${
                       isActive
                         ? 'border-emerald-500/50 bg-emerald-500/10'
                         : 'border-slate-800 hover:border-slate-600'
                     }`}
                   >
-                    <p className="truncate text-sm font-medium text-white">
-                      {item.title ?? 'Conversa'}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatSessionDate(item.updatedAt)}
-                    </p>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSessionId(item.id)}
+                      className="min-w-0 flex-1 px-3 py-2 text-left"
+                    >
+                      <p className="truncate text-sm font-medium text-white">
+                        {item.title ?? 'Conversa'}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatSessionDate(item.updatedAt)}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Excluir conversa"
+                      disabled={deletingId === item.id}
+                      onClick={() => void handleDeleteSession(item.id)}
+                      className="mr-2 mt-2 rounded px-1.5 py-0.5 text-xs text-slate-500 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -120,7 +177,11 @@ export function TutorPage() {
 
         <div className="min-h-[520px]">
           {activeSessionId ? (
-            <TutorChatPanel mode="general" sessionId={activeSessionId} />
+            <TutorChatPanel
+              mode="general"
+              sessionId={activeSessionId}
+              onSessionUpdated={handleSessionUpdated}
+            />
           ) : (
             <div className="flex h-full min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/30 p-6 text-center">
               <p className="max-w-sm text-sm text-slate-400">
