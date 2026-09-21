@@ -352,10 +352,8 @@ tutorRouter.post('/sessions/:id/messages', async (req, res) => {
       systemPrompt = getGeneralTutorSystemPrompt()
     }
 
-    const isSimulationTutor = Boolean(session.simulation_attempt_id && session.question_id)
-
     const reply = await generateTutorReply(systemPrompt, history, content, {
-      useSearchGrounding: !isSimulationTutor,
+      useSearchGrounding: false,
     })
 
     const { data: savedMessages, error: saveError } = await supabaseAdmin
