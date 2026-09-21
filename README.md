@@ -6,10 +6,10 @@ Plataforma web de estudos para o ENEM — desafio de estágio [Hyperflow](https:
 
 | Ambiente | URL |
 |----------|-----|
-| **Frontend (Vercel)** | _Adicionar após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
-| **Backend (Render)** | _Adicionar após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
+| **Frontend (Vercel)** | [guilherme-antunes-enem-ai-challenge.vercel.app](https://guilherme-antunes-enem-ai-challenge.vercel.app/) |
+| **Backend (Render)** | [guilherme-antunes-enem-ai-challenge.onrender.com](https://guilherme-antunes-enem-ai-challenge.onrender.com) |
 
-> Siga o guia em [`DEPLOY.md`](DEPLOY.md) para publicar frontend e backend. Substitua as URLs acima antes da entrega.
+> Deploy em produção. Guia de configuração: [`DEPLOY.md`](DEPLOY.md).
 
 ## Sobre o projeto
 
@@ -170,7 +170,7 @@ npm test
 - [x] **Fase 3** — Dashboard do estudante
 - [x] **Fase 4** — Simulados com EnemHub + histórico
 - [x] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
-- [ ] **Fase 6** — Deploy (Vercel + Render) + URLs e screenshots no README
+- [x] **Fase 6** — Deploy (Vercel + Render) + URLs no README _(screenshots em `docs/screenshots/`)_
 
 ## EnemHub API
 
