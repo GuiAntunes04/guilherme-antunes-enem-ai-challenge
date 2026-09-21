@@ -64,7 +64,7 @@ export async function startEssay(
       source: 'redacao',
       timeLimitSeconds: options.timeLimitSeconds ?? null,
     }),
-    timeoutMs: 60_000,
+    timeoutMs: 120_000,
   })
 
   if (!response.ok) {

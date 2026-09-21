@@ -12,6 +12,7 @@
     "verify:schema": "tsx src/scripts/verify-schema.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.116.0",
     "cors": "^2.8.5",

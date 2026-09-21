@@ -119,7 +119,7 @@ export async function sendTutorMessage(
   const response = await authFetch(`/api/tutor/sessions/${sessionId}/messages`, token, {
     method: 'POST',
     body: JSON.stringify({ content }),
-    timeoutMs: 60_000,
+    timeoutMs: 120_000,
   })
 
   if (!response.ok) {
