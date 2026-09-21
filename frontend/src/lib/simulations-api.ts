@@ -127,13 +127,14 @@ export async function fetchSimulationHistoryAll(
   }
 
   const data = (await response.json()) as {
-    finished: SimulationHistoryItem[]
-    in_progress: SimulationHistoryItem[]
+    finished?: SimulationHistoryItem[]
+    inProgress?: SimulationHistoryItem[]
+    in_progress?: SimulationHistoryItem[]
   }
 
   return {
-    finished: data.finished,
-    inProgress: data.in_progress,
+    finished: data.finished ?? [],
+    inProgress: data.inProgress ?? data.in_progress ?? [],
   }
 }
 
