@@ -4,7 +4,8 @@ import type { EssayTheme } from '../types/essay.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
 import { TIME_ESSAY_SECONDS } from '../types/simulation.js'
 import { generateEssayTheme } from './gemini.js'
-import { fetchQuestionsByIds, sortLikeEnem } from './enemhub-api.js'
+import { sortLikeEnem } from './enemhub-api.js'
+import { resolveQuestionsByIds } from './question-index.js'
 import {
   pickQuestionIdsBySubjectArea,
   pickQuestionIdsBySubjectName,
@@ -139,7 +140,7 @@ export async function loadSimulationQuestions(
   questionIds: string[],
   mode: SimulationMode,
 ): Promise<EnemHubQuestion[]> {
-  const hubQuestions = await fetchQuestionsByIds(questionIds)
+  const hubQuestions = await resolveQuestionsByIds(questionIds)
   const questionMap = new Map(hubQuestions.map((question) => [question.id, question]))
   const ordered = questionIds.flatMap((id) => {
     const question = questionMap.get(id)

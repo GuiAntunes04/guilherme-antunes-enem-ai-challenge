@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '../lib/supabase.js'
 import type { EnemHubQuestion } from '../types/enemhub.js'
-import type { QuestionIndexEntry } from '../types/question-index.js'
+import type { QuestionIndexContent, QuestionIndexEntry } from '../types/question-index.js'
 import {
   getKnowledgeAreasForDay,
   getSubjectQuotasForArea,
@@ -13,6 +13,7 @@ import { fetchQuestionsByIds, fetchQuestionsList, shuffleAndPick } from './enemh
 const UPSERT_BATCH_SIZE = 200
 const INDEX_PAGE_SIZE = 1000
 const CORRECT_ALT_BATCH = 100
+const CONTENT_BATCH = 100
 const PRACTICE_META_TTL_MS = 5 * 60 * 1000
 
 type PracticeMeta = {
@@ -31,6 +32,13 @@ export class QuestionIndexNotSyncedError extends Error {
   }
 }
 
+function toQuestionContent(question: EnemHubQuestion): QuestionIndexContent {
+  return {
+    statement: question.statement,
+    alternatives: question.alternatives,
+  }
+}
+
 function toIndexRow(question: EnemHubQuestion) {
   return {
     id: question.id,
@@ -40,7 +48,54 @@ function toIndexRow(question: EnemHubQuestion) {
     subject_area: question.subject?.area ?? null,
     difficulty: question.difficulty,
     correct_alternative: question.correctAlternative,
+    content: toQuestionContent(question),
     synced_at: new Date().toISOString(),
+  }
+}
+
+type StoredQuestionRow = {
+  id: string
+  year: number
+  subject_id: string | null
+  subject_name: string | null
+  subject_area: string | null
+  difficulty: string | null
+  correct_alternative: string | null
+  content: QuestionIndexContent | null
+}
+
+function rowToEnemHubQuestion(row: StoredQuestionRow): EnemHubQuestion | null {
+  if (!row.content?.statement) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    year: row.year,
+    difficulty: (row.difficulty as EnemHubQuestion['difficulty']) ?? 'Média',
+    statement: row.content.statement,
+    correctAlternative: row.correct_alternative,
+    exam: { id: '', name: '', institution: null },
+    subject: row.subject_id
+      ? {
+          id: row.subject_id,
+          name: row.subject_name ?? '',
+          area: row.subject_area,
+        }
+      : null,
+    alternatives: row.content.alternatives,
+  }
+}
+
+async function backfillIndexRows(rows: ReturnType<typeof toIndexRow>[]): Promise<void> {
+  if (rows.length === 0) return
+
+  const { error } = await supabaseAdmin
+    .from('enem_questions_index')
+    .upsert(rows, { onConflict: 'id' })
+
+  if (error) {
+    console.warn('Failed to backfill question index:', error.message)
   }
 }
 
@@ -182,6 +237,57 @@ export async function getSubjectAreasFromIndex(): Promise<
   return (await getPracticeMetaFromIndex()).areas
 }
 
+export async function fetchQuestionsFromIndex(
+  questionIds: string[],
+): Promise<Map<string, EnemHubQuestion>> {
+  const result = new Map<string, EnemHubQuestion>()
+  const uniqueIds = [...new Set(questionIds)]
+
+  for (let i = 0; i < uniqueIds.length; i += CONTENT_BATCH) {
+    const batch = uniqueIds.slice(i, i + CONTENT_BATCH)
+    const { data, error } = await supabaseAdmin
+      .from('enem_questions_index')
+      .select(
+        'id, year, subject_id, subject_name, subject_area, difficulty, correct_alternative, content',
+      )
+      .in('id', batch)
+
+    if (error) {
+      throw new Error(`Failed to load question content from index: ${error.message}`)
+    }
+
+    for (const row of (data ?? []) as StoredQuestionRow[]) {
+      const question = rowToEnemHubQuestion(row)
+      if (question) {
+        result.set(question.id, question)
+      }
+    }
+  }
+
+  return result
+}
+
+export async function resolveQuestionsByIds(ids: string[]): Promise<EnemHubQuestion[]> {
+  const fromIndex = await fetchQuestionsFromIndex(ids)
+  const missing = [...new Set(ids)].filter((id) => !fromIndex.has(id))
+
+  if (missing.length > 0) {
+    const fromHub = await fetchQuestionsByIds(missing)
+    const backfillRows = fromHub.map((question) => toIndexRow(question))
+
+    await backfillIndexRows(backfillRows)
+
+    for (const question of fromHub) {
+      fromIndex.set(question.id, question)
+    }
+  }
+
+  return ids.flatMap((id) => {
+    const question = fromIndex.get(id)
+    return question ? [question] : []
+  })
+}
+
 export async function fetchCorrectAlternativesFromIndex(
   questionIds: string[],
 ): Promise<Map<string, string | null>> {
@@ -220,23 +326,10 @@ export async function resolveCorrectAlternatives(
     return result
   }
 
-  const questions = await fetchQuestionsByIds(missing)
-  const backfillRows: ReturnType<typeof toIndexRow>[] = []
+  const questions = await resolveQuestionsByIds(missing)
 
   for (const question of questions) {
     result.set(question.id, question.correctAlternative)
-    backfillRows.push(toIndexRow(question))
-  }
-
-  if (backfillRows.length > 0) {
-    void supabaseAdmin
-      .from('enem_questions_index')
-      .upsert(backfillRows, { onConflict: 'id' })
-      .then(({ error }) => {
-        if (error) {
-          console.warn('Failed to backfill correct_alternative:', error.message)
-        }
-      })
   }
 
   return result

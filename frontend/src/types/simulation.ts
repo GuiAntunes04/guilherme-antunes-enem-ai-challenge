@@ -123,7 +123,8 @@ export type SimulationQuestionsBatchResponse = {
   from: number
 }
 
-export const SIMULATION_QUESTION_BATCH_SIZE = 8
+/** Max questions per load request (matches backend; full simulado loads in one call). */
+export const SIMULATION_QUESTION_BATCH_SIZE = 90
 
 export type SubmitSimulationResponse = {
   attempt: SimulationAttempt

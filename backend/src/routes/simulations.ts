@@ -4,19 +4,12 @@ import { supabaseAdmin } from '../lib/supabase.js'
 
 import { requireAuth } from '../middleware/auth.js'
 
-import {
-
-  cacheQuestions,
-
-  fetchQuestionsByIds,
-
-  sanitizeQuestion,
-
-} from '../services/enemhub-api.js'
+import { cacheQuestions, sanitizeQuestion } from '../services/enemhub-api.js'
 
 import {
   QuestionIndexNotSyncedError,
   resolveCorrectAlternatives,
+  resolveQuestionsByIds,
 } from '../services/question-index.js'
 import { mapEssay } from '../services/essay-mapper.js'
 import { isValidMode, planSimulation } from '../services/simulation-builder.js'
@@ -35,7 +28,8 @@ import type { StartSimulationBody } from '../types/simulation.js'
 
 export const simulationsRouter = Router()
 
-const QUESTION_LOAD_BATCH_SIZE = 8
+const QUESTION_LOAD_BATCH_SIZE = 90
+const QUESTION_LOAD_MAX = 90
 
 simulationsRouter.use(requireAuth)
 
@@ -191,7 +185,7 @@ simulationsRouter.get('/:id/questions', async (req, res) => {
   const from = Math.max(0, Number(req.query.from ?? 0))
   const count = Math.min(
     Math.max(1, Number(req.query.count ?? QUESTION_LOAD_BATCH_SIZE)),
-    12,
+    QUESTION_LOAD_MAX,
   )
 
   const { data: attempt, error } = await supabaseAdmin
@@ -215,7 +209,7 @@ simulationsRouter.get('/:id/questions', async (req, res) => {
   }
 
   try {
-    const hubQuestions = await fetchQuestionsByIds(batchIds)
+    const hubQuestions = await resolveQuestionsByIds(batchIds)
     cacheQuestions(hubQuestions)
 
     const questionMap = new Map(hubQuestions.map((question) => [question.id, question]))
@@ -290,7 +284,7 @@ simulationsRouter.get('/:id', async (req, res) => {
     try {
 
       const [hubQuestions, correctMap] = await Promise.all([
-        fetchQuestionsByIds(attempt.question_ids),
+        resolveQuestionsByIds(attempt.question_ids),
         resolveCorrectAlternatives(attempt.question_ids),
       ])
 

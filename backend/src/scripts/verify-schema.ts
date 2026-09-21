@@ -57,6 +57,11 @@ async function main() {
     ok: await columnExists('enem_questions_index', 'correct_alternative'),
   })
 
+  checks.push({
+    name: 'enem_questions_index.content',
+    ok: await columnExists('enem_questions_index', 'content'),
+  })
+
   const { count, error: indexError } = await supabaseAdmin
     .from('enem_questions_index')
     .select('*', { count: 'exact', head: true })

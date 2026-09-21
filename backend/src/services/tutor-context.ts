@@ -1,5 +1,6 @@
 import type { SanitizedQuestion } from '../types/enemhub.js'
-import { fetchQuestionById, sanitizeQuestion } from './enemhub-api.js'
+import { sanitizeQuestion } from './enemhub-api.js'
+import { resolveQuestionsByIds } from './question-index.js'
 
 function stripHtml(html: string): string {
   return html
@@ -30,6 +31,9 @@ export function formatQuestionContext(question: SanitizedQuestion): string {
 }
 
 export async function buildQuestionContextFromId(questionId: string): Promise<string> {
-  const question = sanitizeQuestion(await fetchQuestionById(questionId))
-  return formatQuestionContext(question)
+  const [question] = await resolveQuestionsByIds([questionId])
+  if (!question) {
+    throw new Error('Questão não encontrada no índice')
+  }
+  return formatQuestionContext(sanitizeQuestion(question))
 }

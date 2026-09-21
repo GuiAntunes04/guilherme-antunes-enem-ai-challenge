@@ -17,8 +17,6 @@ import {
 } from '../../lib/simulations-api'
 import type { TutorMessage } from '../../types/tutor'
 import type { SimulationAttempt, SimulationQuestion } from '../../types/simulation'
-import { SIMULATION_QUESTION_BATCH_SIZE } from '../../types/simulation'
-
 type QuizLocationState = {
   questions?: SimulationQuestion[]
   attempt?: SimulationAttempt
@@ -138,26 +136,21 @@ export function SimulationQuizPage() {
           const total = modeAttempt.total
           setLoadProgress({ loaded: 0, total })
 
-          const loadedQuestions: SimulationQuestion[] = []
+          const batch = await fetchSimulationQuestionBatch(
+            token,
+            attemptId!,
+            0,
+            total,
+          )
 
-          for (let from = 0; from < total; from += SIMULATION_QUESTION_BATCH_SIZE) {
-            if (cancelled) return
+          if (cancelled) return
 
-            const batch = await fetchSimulationQuestionBatch(
-              token,
-              attemptId!,
-              from,
-              SIMULATION_QUESTION_BATCH_SIZE,
-            )
-
-            loadedQuestions.push(...batch.questions)
-            setQuestions([...loadedQuestions])
-            setLoadProgress({ loaded: loadedQuestions.length, total: batch.total })
-          }
-
-          if (loadedQuestions.length === 0) {
+          if (batch.questions.length === 0) {
             throw new Error('Nenhuma questão foi carregada para este simulado')
           }
+
+          setQuestions(batch.questions)
+          setLoadProgress({ loaded: batch.questions.length, total: batch.total })
         }
 
         if (cancelled) return
