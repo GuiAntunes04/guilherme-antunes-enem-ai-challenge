@@ -352,9 +352,7 @@ tutorRouter.post('/sessions/:id/messages', async (req, res) => {
       systemPrompt = getGeneralTutorSystemPrompt()
     }
 
-    const reply = await generateTutorReply(systemPrompt, history, content, {
-      useSearchGrounding: false,
-    })
+    const reply = await generateTutorReply(systemPrompt, history, content)
 
     const { data: savedMessages, error: saveError } = await supabaseAdmin
       .from('tutor_messages')

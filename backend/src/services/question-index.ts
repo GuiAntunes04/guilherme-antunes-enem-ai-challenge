@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase.js'
 import type { EnemHubQuestion } from '../types/enemhub.js'
-import type { EnemHubArea, EnemHubSubjectOption } from '../types/enemhub.js'
 import type { QuestionIndexEntry } from '../types/question-index.js'
 import {
   getKnowledgeAreasForDay,
@@ -9,11 +8,7 @@ import {
   type EnemKnowledgeArea,
 } from '../lib/enem-knowledge-areas.js'
 import { ENEM_AREA_ORDER, SUBJECT_PRACTICE_MAX_QUESTIONS } from '../types/simulation.js'
-import {
-  AVAILABLE_YEARS,
-  fetchQuestionsList,
-  shuffleAndPick,
-} from './enemhub-api.js'
+import { fetchQuestionsList, shuffleAndPick } from './enemhub-api.js'
 
 const UPSERT_BATCH_SIZE = 200
 const INDEX_PAGE_SIZE = 1000
@@ -95,33 +90,6 @@ export async function syncQuestionIndex(): Promise<{ total: number; pages: numbe
   return { total: rows.length, pages }
 }
 
-export async function getIndexedYears(): Promise<number[]> {
-  await ensureIndexSynced()
-
-  const years = new Set<number>()
-
-  for (let from = 0; ; from += INDEX_PAGE_SIZE) {
-    const { data, error } = await supabaseAdmin
-      .from('enem_questions_index')
-      .select('year')
-      .range(from, from + INDEX_PAGE_SIZE - 1)
-
-    if (error) {
-      throw new Error(`Failed to load indexed years: ${error.message}`)
-    }
-
-    if (!data?.length) break
-
-    for (const row of data) {
-      years.add(row.year)
-    }
-
-    if (data.length < INDEX_PAGE_SIZE) break
-  }
-
-  return [...years].sort((a, b) => b - a)
-}
-
 export type PracticeSubjectOption = {
   name: string
   count: number
@@ -198,51 +166,6 @@ export async function getSubjectAreasFromIndex(): Promise<
   return [...counts.entries()]
     .map(([area, count]) => ({ area, count }))
     .sort((a, b) => a.area.localeCompare(b.area))
-}
-
-export async function getAreasFromIndex(year: number): Promise<EnemHubArea[]> {
-  await ensureIndexSynced()
-
-  const { data, error } = await supabaseAdmin
-    .from('enem_questions_index')
-    .select('subject_area')
-    .eq('year', year)
-    .not('subject_area', 'is', null)
-
-  if (error) {
-    throw new Error(`Failed to load areas from index: ${error.message}`)
-  }
-
-  const areas = [...new Set((data ?? []).map((row) => row.subject_area as string))]
-  return areas.sort().map((area) => ({ area }))
-}
-
-export async function getSubjectsFromIndex(year: number): Promise<EnemHubSubjectOption[]> {
-  await ensureIndexSynced()
-
-  const { data, error } = await supabaseAdmin
-    .from('enem_questions_index')
-    .select('subject_id, subject_name, subject_area')
-    .eq('year', year)
-    .not('subject_id', 'is', null)
-
-  if (error) {
-    throw new Error(`Failed to load subjects from index: ${error.message}`)
-  }
-
-  const map = new Map<string, EnemHubSubjectOption>()
-
-  for (const row of data ?? []) {
-    if (row.subject_id) {
-      map.set(row.subject_id, {
-        id: row.subject_id,
-        name: row.subject_name ?? 'Matéria',
-        area: row.subject_area,
-      })
-    }
-  }
-
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
 
 async function queryIndexEntries(
@@ -500,5 +423,3 @@ export async function pickQuestionIdsForDaySimulation(
     'Não foi possível montar um simulado diferente dos anteriores. Tente novamente.',
   )
 }
-
-export { AVAILABLE_YEARS }

@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { GoogleGenAI } from '@google/genai'
 import { env } from '../config/env.js'
 import type { EssayFeedback, EssayTheme } from '../types/essay.js'
 import {
@@ -27,44 +26,25 @@ function truncateHistory(messages: TutorChatMessage[]): TutorChatMessage[] {
   return messages.slice(-MAX_HISTORY_MESSAGES)
 }
 
-function getGenAiClient(): GoogleGenAI {
-  if (!env.geminiApiKey) {
-    throw new Error('GEMINI_API_KEY não configurada no backend')
-  }
-
-  return new GoogleGenAI({ apiKey: env.geminiApiKey })
-}
-
-export type GenerateTutorReplyOptions = {
-  useSearchGrounding?: boolean
-}
-
 export async function generateTutorReply(
   systemPrompt: string,
   history: TutorChatMessage[],
   userMessage: string,
-  options: GenerateTutorReplyOptions = {},
 ): Promise<string> {
-  const useSearchGrounding = options.useSearchGrounding ?? false
-
-  const contents = [
-    ...truncateHistory(history).map((message) => ({
-      role: message.role === 'assistant' ? ('model' as const) : ('user' as const),
-      parts: [{ text: message.content }],
-    })),
-    { role: 'user' as const, parts: [{ text: userMessage }] },
-  ]
-
-  const response = await getGenAiClient().models.generateContent({
+  const model = getClient().getGenerativeModel({
     model: env.geminiModel,
-    contents,
-    config: {
-      systemInstruction: systemPrompt,
-      ...(useSearchGrounding ? { tools: [{ googleSearch: {} }] } : {}),
-    },
+    systemInstruction: systemPrompt,
   })
 
-  const text = response.text?.trim()
+  const chat = model.startChat({
+    history: truncateHistory(history).map((message) => ({
+      role: message.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: message.content }],
+    })),
+  })
+
+  const result = await chat.sendMessage(userMessage)
+  const text = result.response.text().trim()
 
   if (!text) {
     throw new Error('Gemini retornou resposta vazia')

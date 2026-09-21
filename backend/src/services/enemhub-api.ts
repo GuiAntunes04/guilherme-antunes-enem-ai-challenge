@@ -14,11 +14,6 @@ const REQUEST_SPACING_MS = 350
 
 const questionCache = new Map<string, EnemHubQuestion>()
 
-export const AVAILABLE_YEARS = [
-  2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011,
-  2010, 2009,
-]
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
