@@ -9,8 +9,9 @@ import { ENEM_AREA_ORDER } from '../types/simulation.js'
 
 const BASE_URL = 'https://api.enemhub.com.br/v1/enem/questions'
 const MAX_RETRIES = 8
-/** Pause between sequential EnemHub question fetches to avoid rate limits. */
-const REQUEST_SPACING_MS = 350
+/** Parallel fetches per chunk; pause between chunks to avoid rate limits. */
+const FETCH_CONCURRENCY = 4
+const REQUEST_SPACING_MS = 150
 
 const questionCache = new Map<string, EnemHubQuestion>()
 
@@ -75,11 +76,15 @@ export async function fetchQuestionsByIds(ids: string[]): Promise<EnemHubQuestio
   const uniqueIds = [...new Set(ids)]
   const resultMap = new Map<string, EnemHubQuestion>()
 
-  for (let index = 0; index < uniqueIds.length; index += 1) {
-    const id = uniqueIds[index]
-    resultMap.set(id, await fetchQuestionById(id))
+  for (let start = 0; start < uniqueIds.length; start += FETCH_CONCURRENCY) {
+    const chunk = uniqueIds.slice(start, start + FETCH_CONCURRENCY)
+    const results = await Promise.all(chunk.map((id) => fetchQuestionById(id)))
 
-    if (index < uniqueIds.length - 1) {
+    for (let index = 0; index < chunk.length; index += 1) {
+      resultMap.set(chunk[index], results[index])
+    }
+
+    if (start + FETCH_CONCURRENCY < uniqueIds.length) {
       await sleep(REQUEST_SPACING_MS)
     }
   }

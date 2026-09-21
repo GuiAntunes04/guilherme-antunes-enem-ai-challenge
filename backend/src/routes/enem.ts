@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import {
   getIndexCount,
+  getPracticeMetaFromIndex,
   getSubjectAreasFromIndex,
   getSubjectNamesFromIndex,
   QuestionIndexNotSyncedError,
@@ -34,6 +35,19 @@ enemRouter.post('/sync', async (_req, res) => {
   } catch (error) {
     res.status(502).json({
       error: 'Failed to sync question index',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+enemRouter.get('/practice-meta', async (_req, res) => {
+  try {
+    const meta = await getPracticeMetaFromIndex()
+    res.json(meta)
+  } catch (error) {
+    const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
+    res.status(status).json({
+      error: 'Failed to fetch practice meta',
       message: error instanceof Error ? error.message : 'Unknown error',
     })
   }

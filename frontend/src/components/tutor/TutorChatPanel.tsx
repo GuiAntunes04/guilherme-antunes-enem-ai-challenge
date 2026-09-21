@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MutableRefObject } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   fetchTutorMessages,
@@ -10,6 +10,11 @@ import type { TutorMessage, TutorSession } from '../../types/tutor'
 import { TutorComposer } from './TutorComposer'
 import { TutorMessageList } from './TutorMessageList'
 
+type SimulationTutorCacheEntry = {
+  sessionId: string
+  messages: TutorMessage[]
+}
+
 type TutorChatPanelProps = {
   mode: 'simulation' | 'general'
   sessionId?: string
@@ -17,7 +22,12 @@ type TutorChatPanelProps = {
   question?: SimulationQuestion
   title?: string
   compact?: boolean
+  simulationCache?: MutableRefObject<Map<string, SimulationTutorCacheEntry>>
   onSessionUpdated?: (session: TutorSession) => void
+}
+
+function simulationCacheKey(attemptId: string, questionId: string): string {
+  return `${attemptId}:${questionId}`
 }
 
 export function TutorChatPanel({
@@ -27,6 +37,7 @@ export function TutorChatPanel({
   question,
   title,
   compact = false,
+  simulationCache,
   onSessionUpdated,
 }: TutorChatPanelProps) {
   const { session } = useAuth()
@@ -61,6 +72,14 @@ export function TutorChatPanel({
             throw new Error('Simulado ou questão indisponível para o tutor')
           }
 
+          const cacheKey = simulationCacheKey(attemptId, question.id)
+          const cached = simulationCache?.current.get(cacheKey)
+          if (cached) {
+            setSessionId(cached.sessionId)
+            setMessages(cached.messages)
+            return
+          }
+
           const simulationSession = await getOrCreateSimulationTutorSession(
             token,
             attemptId,
@@ -82,6 +101,13 @@ export function TutorChatPanel({
         if (cancelled) return
 
         setMessages(data.messages)
+
+        if (mode === 'simulation' && attemptId && question?.id && simulationCache) {
+          simulationCache.current.set(simulationCacheKey(attemptId, question.id), {
+            sessionId: activeSessionId,
+            messages: data.messages,
+          })
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Erro ao carregar tutor')
@@ -98,7 +124,7 @@ export function TutorChatPanel({
     return () => {
       cancelled = true
     }
-  }, [token, mode, externalSessionId, attemptId, question?.id])
+  }, [token, mode, externalSessionId, attemptId, question?.id, simulationCache])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -127,7 +153,16 @@ export function TutorChatPanel({
         const newMessages = response.messages.filter(
           (message) => !withoutOptimistic.some((existing) => existing.id === message.id),
         )
-        return [...withoutOptimistic, ...newMessages]
+        const nextMessages = [...withoutOptimistic, ...newMessages]
+
+        if (mode === 'simulation' && attemptId && question?.id && simulationCache) {
+          simulationCache.current.set(simulationCacheKey(attemptId, question.id), {
+            sessionId,
+            messages: nextMessages,
+          })
+        }
+
+        return nextMessages
       })
       onSessionUpdated?.(response.session)
     } catch (err) {

@@ -14,7 +14,10 @@ import {
 
 } from '../services/enemhub-api.js'
 
-import { QuestionIndexNotSyncedError } from '../services/question-index.js'
+import {
+  QuestionIndexNotSyncedError,
+  resolveCorrectAlternatives,
+} from '../services/question-index.js'
 import { mapEssay } from '../services/essay-mapper.js'
 import { isValidMode, planSimulation } from '../services/simulation-builder.js'
 import type { EssayRow } from '../types/essay.js'
@@ -123,11 +126,10 @@ function computeElapsedSeconds(
   return elapsed
 }
 
-simulationsRouter.get('/', async (req, res) => {
-
-  const userId = req.user!.id
-  const status = String(req.query.status ?? 'finished')
-
+async function loadSimulationHistory(
+  userId: string,
+  status: 'finished' | 'in_progress',
+) {
   let query = supabaseAdmin
     .from('simulation_attempts')
     .select(
@@ -142,33 +144,43 @@ simulationsRouter.get('/', async (req, res) => {
   }
 
   const { data, error } = await query
-
-
-
   if (error) {
-
-    res.status(500).json({ error: 'Failed to load history', message: error.message })
-
-    return
-
+    throw error
   }
 
+  return (data ?? []).map((attempt) => ({
+    ...attempt,
+    disciplineLabel: formatAttemptLabel(attempt),
+    attemptTitle: formatAttemptTitle(attempt),
+  }))
+}
 
+simulationsRouter.get('/', async (req, res) => {
+  const userId = req.user!.id
+  const status = String(req.query.status ?? 'finished')
 
-  res.json(
+  try {
+    if (status === 'all') {
+      const [finished, inProgress] = await Promise.all([
+        loadSimulationHistory(userId, 'finished'),
+        loadSimulationHistory(userId, 'in_progress'),
+      ])
+      res.json({ finished, inProgress })
+      return
+    }
 
-    data.map((attempt) => ({
+    if (status !== 'finished' && status !== 'in_progress') {
+      res.status(400).json({ error: 'Invalid status', message: 'Use finished, in_progress or all' })
+      return
+    }
 
-      ...attempt,
-
-      disciplineLabel: formatAttemptLabel(attempt),
-
-      attemptTitle: formatAttemptTitle(attempt),
-
-    })),
-
-  )
-
+    res.json(await loadSimulationHistory(userId, status))
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to load history',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
 })
 
 
@@ -277,36 +289,27 @@ simulationsRouter.get('/:id', async (req, res) => {
 
     try {
 
-      const hubQuestions = await fetchQuestionsByIds(attempt.question_ids)
+      const [hubQuestions, correctMap] = await Promise.all([
+        fetchQuestionsByIds(attempt.question_ids),
+        resolveCorrectAlternatives(attempt.question_ids),
+      ])
+
+      const questionById = new Map(hubQuestions.map((q) => [q.id, q]))
 
       const orderedQuestions: EnemHubQuestion[] = attempt.question_ids.flatMap(
-
         (id: string) => {
-
-          const question = hubQuestions.find((q) => q.id === id)
-
+          const question = questionById.get(id)
           return question ? [question] : []
-
         },
-
       )
 
       questions = orderedQuestions.map(sanitizeQuestion)
 
-
-
       if (attempt.finished_at && answers?.length) {
-
-        const questionMap = new Map(hubQuestions.map((q) => [q.id, q]))
-
         enrichedAnswers = answers.map((answer) => ({
-
           ...answer,
-
-          correct_option: questionMap.get(answer.question_id)?.correctAlternative,
-
+          correct_option: correctMap.get(answer.question_id) ?? null,
         }))
-
       }
 
     } catch (error) {
@@ -701,34 +704,18 @@ simulationsRouter.post('/:id/submit', async (req, res) => {
 
   try {
 
-    const hubQuestions = await fetchQuestionsByIds(attempt.question_ids)
-
-    const questionMap = new Map(hubQuestions.map((q) => [q.id, q]))
-
-
+    const correctMap = await resolveCorrectAlternatives(attempt.question_ids)
 
     const gradedAnswers = answers.map((answer) => {
-
-      const question = questionMap.get(answer.questionId)
-
-      const isCorrect =
-
-        question?.correctAlternative?.toUpperCase() === answer.selectedOption.toUpperCase()
-
-
+      const correct = correctMap.get(answer.questionId)
+      const isCorrect = correct?.toUpperCase() === answer.selectedOption.toUpperCase()
 
       return {
-
         attempt_id: attemptId,
-
         question_id: answer.questionId,
-
         selected_option: answer.selectedOption.toUpperCase(),
-
         is_correct: Boolean(isCorrect),
-
       }
-
     })
 
 
@@ -801,7 +788,7 @@ simulationsRouter.post('/:id/submit', async (req, res) => {
 
         is_correct: a.is_correct,
 
-        correct_option: questionMap.get(a.question_id)?.correctAlternative,
+        correct_option: correctMap.get(a.question_id) ?? null,
 
       })),
 

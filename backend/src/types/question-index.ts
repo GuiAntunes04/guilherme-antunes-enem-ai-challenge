@@ -5,6 +5,7 @@ export type QuestionIndexEntry = {
   subject_name: string | null
   subject_area: string | null
   difficulty: string | null
+  correct_alternative: string | null
 }
 
 export type QuestionIndexRow = {
@@ -14,4 +15,5 @@ export type QuestionIndexRow = {
   subject_name: string | null
   subject_area: string | null
   difficulty: string | null
+  correct_alternative: string | null
 }

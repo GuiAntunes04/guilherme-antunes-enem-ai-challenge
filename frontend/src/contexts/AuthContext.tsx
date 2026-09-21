@@ -70,12 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
 
       if (nextSession?.access_token) {
-        await loadProfile(nextSession.access_token)
+        if (event !== 'TOKEN_REFRESHED') {
+          await loadProfile(nextSession.access_token)
+        }
       } else {
         setProfile(null)
       }

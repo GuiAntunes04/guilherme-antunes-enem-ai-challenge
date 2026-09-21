@@ -8,10 +8,19 @@ import {
   type EnemKnowledgeArea,
 } from '../lib/enem-knowledge-areas.js'
 import { ENEM_AREA_ORDER, SUBJECT_PRACTICE_MAX_QUESTIONS } from '../types/simulation.js'
-import { fetchQuestionsList, shuffleAndPick } from './enemhub-api.js'
+import { fetchQuestionsByIds, fetchQuestionsList, shuffleAndPick } from './enemhub-api.js'
 
 const UPSERT_BATCH_SIZE = 200
 const INDEX_PAGE_SIZE = 1000
+const CORRECT_ALT_BATCH = 100
+const PRACTICE_META_TTL_MS = 5 * 60 * 1000
+
+type PracticeMeta = {
+  areas: { area: string; count: number }[]
+  subjects: PracticeSubjectOption[]
+}
+
+let practiceMetaCache: { expiresAt: number; data: PracticeMeta } | null = null
 
 export class QuestionIndexNotSyncedError extends Error {
   constructor() {
@@ -30,6 +39,7 @@ function toIndexRow(question: EnemHubQuestion) {
     subject_name: question.subject?.name ?? null,
     subject_area: question.subject?.area ?? null,
     difficulty: question.difficulty,
+    correct_alternative: question.correctAlternative,
     synced_at: new Date().toISOString(),
   }
 }
@@ -87,6 +97,7 @@ export async function syncQuestionIndex(): Promise<{ total: number; pages: numbe
     }
   }
 
+  invalidatePracticeMetaCache()
   return { total: rows.length, pages }
 }
 
@@ -96,76 +107,139 @@ export type PracticeSubjectOption = {
   knowledgeArea: string | null
 }
 
-export async function getSubjectNamesFromIndex(): Promise<PracticeSubjectOption[]> {
+async function scanPracticeMetaFromIndex(): Promise<PracticeMeta> {
   await ensureIndexSynced()
 
-  const counts = new Map<string, number>()
+  const subjectCounts = new Map<string, number>()
+  const areaCounts = new Map<string, number>()
 
   for (let from = 0; ; from += INDEX_PAGE_SIZE) {
     const { data, error } = await supabaseAdmin
       .from('enem_questions_index')
-      .select('subject_name')
-      .not('subject_name', 'is', null)
+      .select('subject_name, subject_area')
       .range(from, from + INDEX_PAGE_SIZE - 1)
 
     if (error) {
-      throw new Error(`Failed to load subject names from index: ${error.message}`)
+      throw new Error(`Failed to load practice meta from index: ${error.message}`)
     }
 
     if (!data?.length) break
 
     for (const row of data) {
-      const name = row.subject_name as string
-      counts.set(name, (counts.get(name) ?? 0) + 1)
+      if (row.subject_name) {
+        const name = row.subject_name as string
+        subjectCounts.set(name, (subjectCounts.get(name) ?? 0) + 1)
+      }
+      if (row.subject_area) {
+        const area = row.subject_area as string
+        areaCounts.set(area, (areaCounts.get(area) ?? 0) + 1)
+      }
     }
 
     if (data.length < INDEX_PAGE_SIZE) break
   }
 
-  return [...counts.entries()]
-    .map(([name, count]) => ({
-      name,
-      count,
-      knowledgeArea: resolveKnowledgeAreaFromSubject(name),
-    }))
-    .sort((a, b) => {
-      const areaCompare = knowledgeAreaOrder(a.name) - knowledgeAreaOrder(b.name)
-      if (areaCompare !== 0) return areaCompare
-      return a.name.localeCompare(b.name)
-    })
+  return {
+    subjects: [...subjectCounts.entries()]
+      .map(([name, count]) => ({
+        name,
+        count,
+        knowledgeArea: resolveKnowledgeAreaFromSubject(name),
+      }))
+      .sort((a, b) => {
+        const areaCompare = knowledgeAreaOrder(a.name) - knowledgeAreaOrder(b.name)
+        if (areaCompare !== 0) return areaCompare
+        return a.name.localeCompare(b.name)
+      }),
+    areas: [...areaCounts.entries()]
+      .map(([area, count]) => ({ area, count }))
+      .sort((a, b) => a.area.localeCompare(b.area)),
+  }
+}
+
+export async function getPracticeMetaFromIndex(): Promise<PracticeMeta> {
+  const now = Date.now()
+  if (practiceMetaCache && practiceMetaCache.expiresAt > now) {
+    return practiceMetaCache.data
+  }
+
+  const data = await scanPracticeMetaFromIndex()
+  practiceMetaCache = { expiresAt: now + PRACTICE_META_TTL_MS, data }
+  return data
+}
+
+export function invalidatePracticeMetaCache(): void {
+  practiceMetaCache = null
+}
+
+export async function getSubjectNamesFromIndex(): Promise<PracticeSubjectOption[]> {
+  return (await getPracticeMetaFromIndex()).subjects
 }
 
 export async function getSubjectAreasFromIndex(): Promise<
   { area: string; count: number }[]
 > {
-  await ensureIndexSynced()
+  return (await getPracticeMetaFromIndex()).areas
+}
 
-  const counts = new Map<string, number>()
+export async function fetchCorrectAlternativesFromIndex(
+  questionIds: string[],
+): Promise<Map<string, string | null>> {
+  const result = new Map<string, string | null>()
+  const uniqueIds = [...new Set(questionIds)]
 
-  for (let from = 0; ; from += INDEX_PAGE_SIZE) {
+  for (let i = 0; i < uniqueIds.length; i += CORRECT_ALT_BATCH) {
+    const batch = uniqueIds.slice(i, i + CORRECT_ALT_BATCH)
     const { data, error } = await supabaseAdmin
       .from('enem_questions_index')
-      .select('subject_area')
-      .not('subject_area', 'is', null)
-      .range(from, from + INDEX_PAGE_SIZE - 1)
+      .select('id, correct_alternative')
+      .in('id', batch)
 
     if (error) {
-      throw new Error(`Failed to load subject areas from index: ${error.message}`)
+      throw new Error(`Failed to load correct alternatives: ${error.message}`)
     }
 
-    if (!data?.length) break
-
-    for (const row of data) {
-      const area = row.subject_area as string
-      counts.set(area, (counts.get(area) ?? 0) + 1)
+    for (const row of (data ?? []) as { id: string; correct_alternative: string | null }[]) {
+      result.set(row.id, row.correct_alternative)
     }
-
-    if (data.length < INDEX_PAGE_SIZE) break
   }
 
-  return [...counts.entries()]
-    .map(([area, count]) => ({ area, count }))
-    .sort((a, b) => a.area.localeCompare(b.area))
+  return result
+}
+
+export async function resolveCorrectAlternatives(
+  questionIds: string[],
+): Promise<Map<string, string | null>> {
+  const result = await fetchCorrectAlternativesFromIndex(questionIds)
+  const missing = questionIds.filter((id) => {
+    const value = result.get(id)
+    return value === undefined || value === null
+  })
+
+  if (missing.length === 0) {
+    return result
+  }
+
+  const questions = await fetchQuestionsByIds(missing)
+  const backfillRows: ReturnType<typeof toIndexRow>[] = []
+
+  for (const question of questions) {
+    result.set(question.id, question.correctAlternative)
+    backfillRows.push(toIndexRow(question))
+  }
+
+  if (backfillRows.length > 0) {
+    void supabaseAdmin
+      .from('enem_questions_index')
+      .upsert(backfillRows, { onConflict: 'id' })
+      .then(({ error }) => {
+        if (error) {
+          console.warn('Failed to backfill correct_alternative:', error.message)
+        }
+      })
+  }
+
+  return result
 }
 
 async function queryIndexEntries(

@@ -47,6 +47,16 @@ async function main() {
     ok: await columnExists('tutor_sessions', 'simulation_attempt_id'),
   })
 
+  checks.push({
+    name: 'tutor_sessions.question_context',
+    ok: await columnExists('tutor_sessions', 'question_context'),
+  })
+
+  checks.push({
+    name: 'enem_questions_index.correct_alternative',
+    ok: await columnExists('enem_questions_index', 'correct_alternative'),
+  })
+
   const { count, error: indexError } = await supabaseAdmin
     .from('enem_questions_index')
     .select('*', { count: 'exact', head: true })

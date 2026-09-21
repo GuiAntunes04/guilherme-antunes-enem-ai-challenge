@@ -15,6 +15,7 @@ import {
   fetchSimulationQuestionBatch,
   submitSimulation,
 } from '../../lib/simulations-api'
+import type { TutorMessage } from '../../types/tutor'
 import type { SimulationAttempt, SimulationQuestion } from '../../types/simulation'
 import { SIMULATION_QUESTION_BATCH_SIZE } from '../../types/simulation'
 
@@ -70,6 +71,9 @@ export function SimulationQuizPage() {
   )
   const expiredRef = useRef(false)
   const quizStartedAtRef = useRef<string | null>(quizStartedAt)
+  const tutorSimulationCache = useRef(
+    new Map<string, { sessionId: string; messages: TutorMessage[] }>(),
+  )
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   useEffect(() => {
@@ -297,6 +301,7 @@ export function SimulationQuizPage() {
       attemptId={attemptId}
       question={currentQuestion}
       compact={!isDesktop}
+      simulationCache={tutorSimulationCache}
     />
   )
 

@@ -3,9 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   deleteSimulation,
-  fetchEnemPracticeSubjects,
-  fetchEnemSubjectAreas,
-  fetchSimulationHistory,
+  fetchEnemPracticeMeta,
+  fetchSimulationHistoryAll,
   startSimulation,
 } from '../../lib/simulations-api'
 import type {
@@ -101,13 +100,10 @@ export function SimuladosHome() {
   useEffect(() => {
     if (!token) return
 
-    Promise.all([
-      fetchSimulationHistory(token, 'finished'),
-      fetchSimulationHistory(token, 'in_progress'),
-    ])
-      .then(([finished, active]) => {
+    fetchSimulationHistoryAll(token)
+      .then(({ finished, inProgress }) => {
         setHistory(finished)
-        setInProgress(active)
+        setInProgress(inProgress)
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar'))
       .finally(() => setLoading(false))
@@ -127,8 +123,8 @@ export function SimuladosHome() {
     setSubjectArea('')
     setSubjectName('')
 
-    Promise.all([fetchEnemPracticeSubjects(token), fetchEnemSubjectAreas(token)])
-      .then(([subjectsData, areasData]) => {
+    fetchEnemPracticeMeta(token)
+      .then(({ subjects: subjectsData, areas: areasData }) => {
         setPracticeSubjects(subjectsData)
         setSubjectAreas(areasData)
 

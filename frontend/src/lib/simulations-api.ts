@@ -72,24 +72,34 @@ async function parseError(response: Response, fallback: string): Promise<never> 
   throw new Error(body?.message ?? body?.error ?? fallback)
 }
 
-export async function fetchEnemSubjectAreas(token: string): Promise<EnemSubjectArea[]> {
-  const response = await authFetch('/api/enem/subject-areas', token)
+export type EnemPracticeMeta = {
+  areas: EnemSubjectArea[]
+  subjects: EnemPracticeSubject[]
+}
+
+export type SimulationHistoryResponse = {
+  finished: SimulationHistoryItem[]
+  inProgress: SimulationHistoryItem[]
+}
+
+export async function fetchEnemPracticeMeta(token: string): Promise<EnemPracticeMeta> {
+  const response = await authFetch('/api/enem/practice-meta', token)
 
   if (!response.ok) {
-    await parseError(response, 'Falha ao carregar tópicos')
+    await parseError(response, 'Falha ao carregar opções de prática')
   }
 
-  return response.json() as Promise<EnemSubjectArea[]>
+  return response.json() as Promise<EnemPracticeMeta>
+}
+
+export async function fetchEnemSubjectAreas(token: string): Promise<EnemSubjectArea[]> {
+  const meta = await fetchEnemPracticeMeta(token)
+  return meta.areas
 }
 
 export async function fetchEnemPracticeSubjects(token: string): Promise<EnemPracticeSubject[]> {
-  const response = await authFetch('/api/enem/practice-subjects', token)
-
-  if (!response.ok) {
-    await parseError(response, 'Falha ao carregar matérias')
-  }
-
-  return response.json() as Promise<EnemPracticeSubject[]>
+  const meta = await fetchEnemPracticeMeta(token)
+  return meta.subjects
 }
 
 export async function fetchSimulationHistory(
@@ -104,6 +114,27 @@ export async function fetchSimulationHistory(
   }
 
   return response.json() as Promise<SimulationHistoryItem[]>
+}
+
+export async function fetchSimulationHistoryAll(
+  token: string,
+): Promise<SimulationHistoryResponse> {
+  const params = new URLSearchParams({ status: 'all' })
+  const response = await authFetch(`/api/simulations?${params}`, token)
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao carregar histórico')
+  }
+
+  const data = (await response.json()) as {
+    finished: SimulationHistoryItem[]
+    in_progress: SimulationHistoryItem[]
+  }
+
+  return {
+    finished: data.finished,
+    inProgress: data.in_progress,
+  }
 }
 
 /** Creates the attempt with question IDs only — content loads in batches on the quiz page. */

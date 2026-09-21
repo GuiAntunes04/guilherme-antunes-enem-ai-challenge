@@ -20,6 +20,7 @@ type TutorSessionRow = {
   title: string | null
   simulation_attempt_id: string | null
   question_id: string | null
+  question_context: string | null
   created_at: string
   updated_at: string
 }
@@ -200,6 +201,8 @@ tutorRouter.post('/sessions/simulation', async (req, res) => {
       return
     }
 
+    const questionContext = await buildQuestionContextFromId(questionId)
+
     const { data: created, error: createError } = await supabaseAdmin
       .from('tutor_sessions')
       .insert({
@@ -207,6 +210,7 @@ tutorRouter.post('/sessions/simulation', async (req, res) => {
         title: 'Dúvida no simulado',
         simulation_attempt_id: attemptId,
         question_id: questionId,
+        question_context: questionContext,
       })
       .select('*')
       .single()
@@ -346,7 +350,8 @@ tutorRouter.post('/sessions/:id/messages', async (req, res) => {
 
     let systemPrompt: string
     if (session.simulation_attempt_id && session.question_id) {
-      const questionContext = await buildQuestionContextFromId(session.question_id)
+      const questionContext =
+        session.question_context ?? (await buildQuestionContextFromId(session.question_id))
       systemPrompt = getSimulationTutorSystemPrompt(questionContext)
     } else {
       systemPrompt = getGeneralTutorSystemPrompt()
