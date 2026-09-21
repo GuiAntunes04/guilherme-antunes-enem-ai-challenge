@@ -38,7 +38,7 @@ export function HomePage() {
   const statCards = [
     { label: 'Simulados realizados', value: stats?.simulations ?? 0 },
     { label: 'Redações enviadas', value: stats?.essays ?? 0 },
-    { label: 'Sessões com tutor', value: stats?.tutorSessions ?? 0 },
+    { label: 'Conversas com tutor', value: stats?.tutorSessions ?? 0 },
   ]
 
   const averageAccuracy =

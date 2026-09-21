@@ -22,7 +22,8 @@ statsRouter.get('/', requireAuth, async (req, res) => {
     supabaseAdmin
       .from('tutor_sessions')
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId),
+      .eq('user_id', userId)
+      .is('simulation_attempt_id', null),
     buildDashboardStats(userId),
   ])
 
