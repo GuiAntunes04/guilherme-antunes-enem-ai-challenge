@@ -35,11 +35,3 @@ export type EssayRow = {
   finished_at: string | null
   created_at: string
 }
-
-export const ESSAY_COMPETENCY_LABELS: Record<EssayCompetencyKey, string> = {
-  c1: 'Competência I — Domínio da norma culta',
-  c2: 'Competência II — Compreensão da proposta',
-  c3: 'Competência III — Argumentação',
-  c4: 'Competência IV — Mecanismos linguísticos',
-  c5: 'Competência V — Proposta de intervenção',
-}

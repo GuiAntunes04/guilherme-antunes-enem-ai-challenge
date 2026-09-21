@@ -20,7 +20,6 @@ export const env = {
   port: Number(process.env.PORT ?? 3001),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   frontendOrigins: parseFrontendOrigins(),
-  frontendUrl: parseFrontendOrigins()[0] ?? 'http://localhost:5173',
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
   supabaseJwksUrl: process.env.SUPABASE_JWKS_URL,

@@ -3,8 +3,6 @@ import { requireAuth } from '../middleware/auth.js'
 import {
   getIndexCount,
   getPracticeMetaFromIndex,
-  getSubjectAreasFromIndex,
-  getSubjectNamesFromIndex,
   QuestionIndexNotSyncedError,
   syncQuestionIndex,
 } from '../services/question-index.js'
@@ -48,32 +46,6 @@ enemRouter.get('/practice-meta', async (_req, res) => {
     const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
     res.status(status).json({
       error: 'Failed to fetch practice meta',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-})
-
-enemRouter.get('/subject-areas', async (_req, res) => {
-  try {
-    const areas = await getSubjectAreasFromIndex()
-    res.json(areas)
-  } catch (error) {
-    const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
-    res.status(status).json({
-      error: 'Failed to fetch subject areas',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-})
-
-enemRouter.get('/practice-subjects', async (_req, res) => {
-  try {
-    const subjects = await getSubjectNamesFromIndex()
-    res.json(subjects)
-  } catch (error) {
-    const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
-    res.status(status).json({
-      error: 'Failed to fetch practice subjects',
       message: error instanceof Error ? error.message : 'Unknown error',
     })
   }

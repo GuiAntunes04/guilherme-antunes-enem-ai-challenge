@@ -38,6 +38,4 @@ export const ESSAY_COMPETENCY_LABELS: Record<EssayCompetencyKey, string> = {
   c5: 'Competência V — Proposta de intervenção',
 }
 
-export const TIME_ESSAY_SECONDS = 90 * 60
-
 export const MIN_ESSAY_CHARS = 150

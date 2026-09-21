@@ -24,6 +24,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Screenshot capture leftovers
+docs/screenshots/_tmp/
+
 # Vite
 frontend/dist/
 

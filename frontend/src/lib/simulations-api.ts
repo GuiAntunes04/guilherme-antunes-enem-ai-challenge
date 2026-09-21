@@ -92,30 +92,6 @@ export async function fetchEnemPracticeMeta(token: string): Promise<EnemPractice
   return response.json() as Promise<EnemPracticeMeta>
 }
 
-export async function fetchEnemSubjectAreas(token: string): Promise<EnemSubjectArea[]> {
-  const meta = await fetchEnemPracticeMeta(token)
-  return meta.areas
-}
-
-export async function fetchEnemPracticeSubjects(token: string): Promise<EnemPracticeSubject[]> {
-  const meta = await fetchEnemPracticeMeta(token)
-  return meta.subjects
-}
-
-export async function fetchSimulationHistory(
-  token: string,
-  status: 'finished' | 'in_progress' = 'finished',
-): Promise<SimulationHistoryItem[]> {
-  const params = new URLSearchParams({ status })
-  const response = await authFetch(`/api/simulations?${params}`, token)
-
-  if (!response.ok) {
-    await parseError(response, 'Falha ao carregar histórico')
-  }
-
-  return response.json() as Promise<SimulationHistoryItem[]>
-}
-
 export async function fetchSimulationHistoryAll(
   token: string,
 ): Promise<SimulationHistoryResponse> {

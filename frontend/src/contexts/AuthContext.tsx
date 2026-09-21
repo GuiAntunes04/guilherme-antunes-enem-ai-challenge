@@ -23,7 +23,6 @@ type AuthContextValue = {
     password: string,
   ) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -42,11 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null)
     }
   }, [])
-
-  const refreshProfile = useCallback(async () => {
-    if (!session?.access_token) return
-    await loadProfile(session.access_token)
-  }, [loadProfile, session?.access_token])
 
   useEffect(() => {
     let mounted = true
@@ -128,18 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
-      refreshProfile,
     }),
-    [
-      user,
-      session,
-      profile,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-      refreshProfile,
-    ],
+    [user, session, profile, loading, signIn, signUp, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

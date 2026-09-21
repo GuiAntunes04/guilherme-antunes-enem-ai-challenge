@@ -31,16 +31,13 @@ export const DAY_TWO_AREAS = [
   'Matemática e suas Tecnologias',
 ]
 
-export const QUESTIONS_PER_AREA = 45
 /** Max questions loaded from EnemHub per subject-practice attempt (API quota). */
 export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
-export const TIME_AREA_SECONDS = 90 * 60
 export const TIME_DAY_SECONDS = 270 * 60
 export const TIME_ESSAY_SECONDS = 90 * 60
 
 export type StartSimulationBody = {
   mode: SimulationMode
-  examYear?: number
   /** subject_area topic path from enem_questions_index (subject practice only) */
   subjectArea?: string
   /** ENEM discipline name, e.g. Matemática, História (subject practice only) */

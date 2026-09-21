@@ -128,14 +128,6 @@ export function shuffleAndPick<T>(items: T[], count: number): T[] {
   return copy.slice(0, count)
 }
 
-export function sortWithinArea(questions: EnemHubQuestion[]): EnemHubQuestion[] {
-  return [...questions].sort((a, b) => {
-    const nameCompare = (a.subject?.name ?? '').localeCompare(b.subject?.name ?? '')
-    if (nameCompare !== 0) return nameCompare
-    return a.year - b.year
-  })
-}
-
 function knowledgeAreaOrder(subjectName: string | undefined): number {
   const area = resolveKnowledgeAreaFromSubject(subjectName)
   if (!area) return ENEM_AREA_ORDER.length

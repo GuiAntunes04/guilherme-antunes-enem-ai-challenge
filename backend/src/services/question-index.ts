@@ -227,16 +227,6 @@ export function invalidatePracticeMetaCache(): void {
   practiceMetaCache = null
 }
 
-export async function getSubjectNamesFromIndex(): Promise<PracticeSubjectOption[]> {
-  return (await getPracticeMetaFromIndex()).subjects
-}
-
-export async function getSubjectAreasFromIndex(): Promise<
-  { area: string; count: number }[]
-> {
-  return (await getPracticeMetaFromIndex()).areas
-}
-
 export async function fetchQuestionsFromIndex(
   questionIds: string[],
 ): Promise<Map<string, EnemHubQuestion>> {
@@ -388,14 +378,6 @@ async function queryIndexEntries(
   }
 
   return rows
-}
-
-export function sortIndexWithinArea(entries: QuestionIndexEntry[]): QuestionIndexEntry[] {
-  return [...entries].sort((a, b) => {
-    const nameCompare = (a.subject_name ?? '').localeCompare(b.subject_name ?? '')
-    if (nameCompare !== 0) return nameCompare
-    return a.year - b.year
-  })
 }
 
 function knowledgeAreaOrder(subjectName: string | null): number {

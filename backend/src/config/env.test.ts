@@ -10,5 +10,4 @@ test('FRONTEND_URL supports comma-separated CORS origins', async () => {
     'http://localhost:5173',
     'https://enem-prep-ai.vercel.app',
   ])
-  assert.equal(env.frontendUrl, 'http://localhost:5173')
 })

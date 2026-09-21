@@ -39,10 +39,6 @@ export function resolveKnowledgeAreaFromSubject(
   return SUBJECT_TO_ENEM_AREA.get(subjectName.trim()) ?? null
 }
 
-export function getSubjectNamesForKnowledgeArea(area: EnemKnowledgeArea): string[] {
-  return [...SUBJECT_NAMES_BY_ENEM_AREA[area]]
-}
-
 export function getKnowledgeAreasForDay(mode: 'day_one' | 'day_two'): EnemKnowledgeArea[] {
   return mode === 'day_one'
     ? ([...DAY_ONE_AREAS] as EnemKnowledgeArea[])

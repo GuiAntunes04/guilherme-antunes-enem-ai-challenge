@@ -1,11 +1,7 @@
 import { Router } from 'express'
-
 import { supabaseAdmin } from '../lib/supabase.js'
-
 import { requireAuth } from '../middleware/auth.js'
-
 import { cacheQuestions, sanitizeQuestion } from '../services/enemhub-api.js'
-
 import {
   QuestionIndexNotSyncedError,
   resolveCorrectAlternatives,
@@ -13,18 +9,13 @@ import {
 } from '../services/question-index.js'
 import { mapEssay } from '../services/essay-mapper.js'
 import { isValidMode, planSimulation } from '../services/simulation-builder.js'
+import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { EssayRow } from '../types/essay.js'
-
 import {
   LEGACY_SIMULATION_MODE_LABELS,
   SIMULATION_MODE_LABELS,
+  type StartSimulationBody,
 } from '../types/simulation.js'
-
-import type { EnemHubQuestion } from '../types/enemhub.js'
-
-import type { StartSimulationBody } from '../types/simulation.js'
-
-
 
 export const simulationsRouter = Router()
 
@@ -32,8 +23,6 @@ const QUESTION_LOAD_BATCH_SIZE = 90
 const QUESTION_LOAD_MAX = 90
 
 simulationsRouter.use(requireAuth)
-
-
 
 const ALL_MODE_LABELS = {
   ...SIMULATION_MODE_LABELS,
@@ -50,15 +39,9 @@ function formatAttemptLabel(attempt: Record<string, unknown>): string {
   return String(attempt.discipline ?? '')
 }
 
-
-
 function formatAttemptTitle(attempt: Record<string, unknown>): string {
-
   const yearsUsed = attempt.years_used as number[] | undefined
-
   const examYear = attempt.exam_year as number | null | undefined
-
-
 
   if (yearsUsed && yearsUsed.length > 1) {
     return `Multi-anos (${yearsUsed.join(', ')})`
