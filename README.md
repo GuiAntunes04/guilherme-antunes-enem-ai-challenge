@@ -6,7 +6,7 @@ Plataforma web de estudos para o ENEM — desafio de estágio [Hyperflow](https:
 
 | Ambiente | URL |
 |----------|-----|
-| **Frontend (Vercel)** | [guilherme-antunes-enem-ai-challenge.vercel.app](https://guilherme-antunes-enem-ai-challenge.vercel.app/) |
+| **Frontend (Vercel)** | [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/) |
 | **Backend (Render)** | [guilherme-antunes-enem-ai-challenge.onrender.com](https://guilherme-antunes-enem-ai-challenge.onrender.com) |
 
 > Deploy em produção. Guia de configuração: [`DEPLOY.md`](DEPLOY.md).
@@ -40,15 +40,33 @@ O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ens
 
 ## Screenshots
 
-Capturas e GIFs em [`docs/screenshots/`](docs/screenshots/):
+Capturas do deploy em [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/). Arquivos em [`docs/screenshots/`](docs/screenshots/).
 
-| Arquivo | Conteúdo |
-|---------|----------|
-| `login.png` | Login e registro |
-| `dashboard.png` | Dashboard com estatísticas |
-| `simulado.png` | Simulado em andamento (tutor lateral) |
-| `tutor.png` | Tutor IA com markdown/LaTeX |
-| `redacao.png` | Corretor de redação com feedback por competência |
+### Autenticação
+
+![Login e registro](docs/screenshots/login.png)
+
+### Dashboard
+
+![Estatísticas e desempenho por matéria](docs/screenshots/dashboard.png)
+
+![Evolução nos simulados](docs/screenshots/dashboard-evolucao.png)
+
+### Simulados
+
+![Simulado em andamento com tutor lateral](docs/screenshots/simulado.png)
+
+![Fluxo do simulado com tutor IA](docs/screenshots/simulado.gif)
+
+### Tutor IA
+
+![Tutor IA com markdown e LaTeX](docs/screenshots/tutor.png)
+
+### Redação
+
+![Corretor de redação — tema e textos motivadores](docs/screenshots/redacao.png)
+
+![Fluxo: tema, escrita e correção C1–C5](docs/screenshots/redacao.gif)
 
 ## Stack
 
@@ -170,7 +188,7 @@ npm test
 - [x] **Fase 3** — Dashboard do estudante
 - [x] **Fase 4** — Simulados com EnemHub + histórico
 - [x] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
-- [x] **Fase 6** — Deploy (Vercel + Render) + URLs no README _(screenshots em `docs/screenshots/`)_
+- [x] **Fase 6** — Deploy (Vercel + Render), URLs e screenshots
 
 ## EnemHub API
 

@@ -1,11 +1,16 @@
 # Screenshots
 
-Adicione capturas de tela da aplicação em produção para o README:
+Capturas da aplicação em produção ([enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/)).
 
-- `login.png` — tela de login
-- `dashboard.png` — dashboard com estatísticas
-- `simulado.png` — simulado em andamento
-- `tutor.png` — tutor IA respondendo
-- `redacao.png` — corretor de redação com feedback
+| Arquivo | Conteúdo |
+|---------|----------|
+| `login.png` | Tela de login e registro |
+| `dashboard.png` | Cards de estatísticas + gráfico radar por matéria |
+| `dashboard-evolucao.png` | Gráfico de evolução nos simulados |
+| `simulado.png` | Simulado em andamento (1º dia) com tutor lateral |
+| `simulado.gif` | Fluxo: configurar simulado → responder → tutor |
+| `tutor.png` | Tutor IA em chat livre (markdown/LaTeX) |
+| `redacao.png` | Corretor de redação — tema e textos motivadores |
+| `redacao.gif` | Fluxo: tema → escrita → correção C1–C5 |
 
-Use o deploy em Vercel para gerar as capturas reais antes da entrega.
+Referenciados na seção **Screenshots** do [README.md](../../README.md).

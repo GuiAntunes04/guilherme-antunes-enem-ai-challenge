@@ -1,5 +1,9 @@
 # Supabase
 
+Banco de dados e autenticação do [ENEM Prep AI](https://enem-prep-ai.vercel.app/).
+
+Após aplicar as migrations, configure **Authentication → URL Configuration** com Site URL `https://enem-prep-ai.vercel.app` (detalhes em [`DEPLOY.md`](../DEPLOY.md)).
+
 ## Aplicar migrations
 
 1. Abra o [Supabase Dashboard](https://supabase.com/dashboard) do seu projeto
@@ -28,7 +32,7 @@
 | `profiles` | Perfil do estudante (criado automaticamente no signup) |
 | `simulation_attempts` | Histórico de simulados |
 | `attempt_answers` | Respostas de cada simulado |
-| `enem_questions_index` | Cache local das questões EnemHub (sync via `npm run sync:questions`) |
+| `enem_questions_index` | Cache local EnemHub — metadados, gabarito e conteúdo JSONB (sync via `npm run sync:questions`) |
 | `essays` | Redações enviadas ao corretor IA |
 | `tutor_sessions` | Sessões do tutor IA |
 | `tutor_messages` | Mensagens do chat com o tutor |
