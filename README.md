@@ -87,7 +87,7 @@ Preencha no `backend/.env`:
 | `SUPABASE_SECRET_KEY` | Secret key (somente backend) |
 | `SUPABASE_JWKS_URL` | `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` |
 | `GEMINI_API_KEY` | Google AI Studio |
-| `GEMINI_MODEL` | Modelo Gemini para todas as features (padrão: `gemini-3.5-flash`) |
+| `GEMINI_MODEL` | Modelo Gemini para todas as features (padrão: `gemini-3.5-flash-lite`) |
 | `ENEMHUB_API_KEY` | EnemHub ENEM product |
 | `FRONTEND_URL` | `http://localhost:5173` (pode ser lista separada por vírgula) |
 
