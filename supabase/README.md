@@ -16,6 +16,8 @@
 | 6 | `migrations/20250919100000_tutor_simulation_context.sql` |
 | 7 | `migrations/20250919110000_quiz_started_at.sql` |
 | 8 | `migrations/20250919200000_essay_simulation.sql` |
+| 9 | `migrations/20250921100000_question_index_correct_alternative.sql` |
+| 10 | `migrations/20250921120000_question_index_content.sql` |
 
 > A migration `20250919200000` usa `drop policy if exists` antes de recriar a policy de update em `essays`, permitindo reexecução segura no Supabase Preview.
 
@@ -26,7 +28,7 @@
 | `profiles` | Perfil do estudante (criado automaticamente no signup) |
 | `simulation_attempts` | Histórico de simulados |
 | `attempt_answers` | Respostas de cada simulado |
-| `enem_questions_index` | Metadados das questões EnemHub (sync via `npm run sync:questions`) |
+| `enem_questions_index` | Cache local das questões EnemHub (sync via `npm run sync:questions`) |
 | `essays` | Redações enviadas ao corretor IA |
 | `tutor_sessions` | Sessões do tutor IA |
 | `tutor_messages` | Mensagens do chat com o tutor |

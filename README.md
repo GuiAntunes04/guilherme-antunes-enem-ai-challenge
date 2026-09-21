@@ -6,37 +6,49 @@ Plataforma web de estudos para o ENEM — desafio de estágio [Hyperflow](https:
 
 | Ambiente | URL |
 |----------|-----|
-| **Frontend (Vercel)** | _Configure após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
-| **Backend (Render)** | _Configure após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
+| **Frontend (Vercel)** | _Adicionar após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
+| **Backend (Render)** | _Adicionar após deploy — ver [DEPLOY.md](DEPLOY.md)_ |
 
-> Siga o guia em [`DEPLOY.md`](DEPLOY.md) para publicar frontend e backend. Após o deploy, substitua as URLs acima.
+> Siga o guia em [`DEPLOY.md`](DEPLOY.md) para publicar frontend e backend. Substitua as URLs acima antes da entrega.
 
 ## Sobre o projeto
 
 O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ensino Médio com:
 
-- **Simulados** com questões reais de provas anteriores (EnemHub), incluindo 1º dia, 2º dia, matéria específica e redação cronometrada
-- **Tutor IA** (Google Gemini) para tirar dúvidas durante simulados ou em chat livre
-- **Corretor de redação** com feedback nas 5 competências do ENEM, geração de temas e importação por foto/documento
+- **Simulados** com questões reais (EnemHub): prática por matéria ou tópico, 1º dia (90 questões), 2º dia (90 questões) e redação cronometrada
+- **Tutor IA** (Google Gemini) em chat livre ou contextualizado por questão durante o simulado
+- **Corretor de redação** com feedback nas 5 competências do ENEM, geração de temas e importação por foto/PDF/DOCX
+- **Dashboard** com simulados realizados, redações enviadas, conversas com tutor, gráfico de evolução e desempenho por matéria
+
+### Modos de simulado
+
+| Modo | Descrição |
+|------|-----------|
+| Matéria específica | Questões aleatórias por matéria ENEM ou tópico, com cronômetro opcional |
+| 1º dia ENEM | 90 questões — Linguagens + Humanas |
+| 2º dia ENEM | 90 questões — Natureza + Matemática |
+| Redação ENEM | Tema gerado pela IA, correção nas 5 competências |
 
 ## Uso da Inteligência Artificial
 
 | Feature | Modelo | O que faz |
 |---------|--------|-----------|
-| **Tutor IA** | Gemini | Responde dúvidas em chat livre ou contextualizadas por questão do simulado (enunciado + alternativas) |
+| **Tutor IA** | Gemini | Responde dúvidas em chat livre ou no contexto da questão atual do simulado |
 | **Tema de redação** | Gemini | Gera proposta dissertativa com textos motivadores no estilo ENEM |
 | **Correção de redação** | Gemini | Avalia C1–C5 (0–200 cada) e nota total 0–1000 com comentários |
 | **Import OCR** | Gemini | Extrai texto de fotos/PDFs/DOCX enviados pelo estudante |
 
 ## Screenshots
 
-Adicione capturas em [`docs/screenshots/`](docs/screenshots/) antes da entrega:
+Capturas e GIFs em [`docs/screenshots/`](docs/screenshots/):
 
-- Login e registro
-- Dashboard com estatísticas
-- Simulado em andamento (com tutor lateral)
-- Tutor IA com markdown/LaTeX
-- Corretor de redação com feedback por competência
+| Arquivo | Conteúdo |
+|---------|----------|
+| `login.png` | Login e registro |
+| `dashboard.png` | Dashboard com estatísticas |
+| `simulado.png` | Simulado em andamento (tutor lateral) |
+| `tutor.png` | Tutor IA com markdown/LaTeX |
+| `redacao.png` | Corretor de redação com feedback por competência |
 
 ## Stack
 
@@ -46,8 +58,17 @@ Adicione capturas em [`docs/screenshots/`](docs/screenshots/) antes da entrega:
 | Backend | Node.js, Express, TypeScript |
 | Banco | Supabase (PostgreSQL + Auth + RLS) |
 | IA | Google Gemini API |
-| Questões | EnemHub API |
+| Questões | EnemHub API (sync) + cache local no Supabase |
 | Deploy | Vercel (frontend) + Render (backend) |
+
+## Arquitetura das questões
+
+O backend sincroniza o acervo EnemHub para a tabela `enem_questions_index` no Supabase:
+
+- **Metadados** — ano, matéria, tópico, dificuldade, gabarito
+- **Conteúdo** — enunciado e alternativas (JSONB)
+
+Durante simulados, as questões são servidas **do Supabase**, evitando o rate limit da EnemHub (10 req/min no plano Free). A API EnemHub é usada apenas no sync inicial e como fallback pontual.
 
 ## Estrutura do repositório
 
@@ -67,7 +88,7 @@ Adicione capturas em [`docs/screenshots/`](docs/screenshots/) antes da entrega:
 - Node.js 20+
 - npm
 - Conta no [Supabase](https://supabase.com)
-- API Key da [EnemHub](https://docs.enemhub.com.br/enem/quickstart)
+- API Key da [EnemHub](https://docs.enemhub.com.br/enem/quickstart) (produto ENEM)
 - API Key do [Google AI Studio](https://aistudio.google.com/)
 
 ### Backend
@@ -79,19 +100,17 @@ npm install
 npm run dev
 ```
 
-Preencha no `backend/.env`:
-
 | Variável | Descrição |
 |----------|-----------|
 | `SUPABASE_URL` | Project URL (Supabase → Settings → API) |
 | `SUPABASE_SECRET_KEY` | Secret key (somente backend) |
 | `SUPABASE_JWKS_URL` | `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` |
 | `GEMINI_API_KEY` | Google AI Studio |
-| `GEMINI_MODEL` | Modelo Gemini para todas as features (padrão: `gemini-3.5-flash-lite`) |
-| `ENEMHUB_API_KEY` | EnemHub ENEM product |
-| `FRONTEND_URL` | `http://localhost:5173` (pode ser lista separada por vírgula) |
+| `GEMINI_MODEL` | Modelo Gemini (padrão: `gemini-3.5-flash-lite`) |
+| `ENEMHUB_API_KEY` | EnemHub — produto ENEM |
+| `FRONTEND_URL` | `http://localhost:5173` (lista separada por vírgula para CORS) |
 
-O servidor sobe em `http://localhost:3001`.
+Servidor: `http://localhost:3001`
 
 ### Frontend
 
@@ -108,11 +127,18 @@ npm run dev
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
 | `VITE_API_URL` | `http://localhost:3001` |
 
-A aplicação abre em `http://localhost:5173`.
+Aplicação: `http://localhost:5173`
 
 ### Banco de dados (Supabase)
 
-Aplique **todas** as migrations na ordem listada em [`supabase/README.md`](supabase/README.md) (8 arquivos SQL).
+Aplique **todas** as migrations na ordem em [`supabase/README.md`](supabase/README.md) (10 arquivos SQL).
+
+Verifique o schema após aplicar:
+
+```bash
+cd backend
+npm run verify:schema
+```
 
 ### Índice de questões (sync único)
 
@@ -123,9 +149,11 @@ cd backend
 npm run sync:questions
 ```
 
-Indexa ~4.800 questões (metadados). O conteúdo completo é buscado na EnemHub sob demanda durante simulados.
+Indexa ~4.800 questões com metadados, gabarito e conteúdo completo. Consome ~50 requisições à EnemHub (listagem paginada, 100 por página).
 
-Alternativa via API (autenticado): `POST /api/enem/sync`
+Alternativa via API autenticada: `POST /api/enem/sync`
+
+> Reexecute o sync após atualizar migrations que alterem `enem_questions_index`.
 
 ### Testes
 
@@ -140,17 +168,22 @@ npm test
 - [x] **Fase 1** — Supabase (schema, RLS, auth middleware)
 - [x] **Fase 2** — Autenticação (login, registro, sessão)
 - [x] **Fase 3** — Dashboard do estudante
-- [x] **Fase 4** — Simulados com EnemHub API + histórico
+- [x] **Fase 4** — Simulados com EnemHub + histórico
 - [x] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
-- [ ] **Fase 6** — Deploy (Vercel + Render) + README final com URLs e screenshots
+- [ ] **Fase 6** — Deploy (Vercel + Render) + URLs e screenshots no README
 
 ## EnemHub API
 
-Questões oficiais via proxy no backend: `https://api.enemhub.com.br/v1/enem/questions`.
+Proxy no backend: `https://api.enemhub.com.br/v1/enem/questions`
 
 Documentação: [docs.enemhub.com.br](https://docs.enemhub.com.br/enem/exemplos)
 
-> Plano Free: 5.000 requisições/mês. O sync inicial consome ~50 requests uma única vez.
+| Limite (Free) | Valor |
+|---------------|-------|
+| Requisições/mês | 5.000 |
+| Requisições/min | 10 |
+
+O sync inicial usa a API de listagem (~50 requests). Simulados em produção leem do Supabase.
 
 ## Licença
 
