@@ -56,15 +56,11 @@ Capturas do deploy em [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/
 
 ![Simulado em andamento com tutor lateral](docs/screenshots/simulado.png)
 
-![Fluxo do simulado com tutor IA](docs/screenshots/simulado.gif)
-
 ### Tutor IA
 
 ![Tutor IA com markdown e LaTeX](docs/screenshots/tutor.png)
 
 ### Redação
-
-![Corretor de redação — tema e textos motivadores](docs/screenshots/redacao.png)
 
 ![Fluxo: tema, escrita e correção C1–C5](docs/screenshots/redacao.gif)
 
