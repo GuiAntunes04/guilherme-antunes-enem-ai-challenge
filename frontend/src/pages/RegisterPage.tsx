@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 import { useAuth } from '../contexts/AuthContext'
 
 export function RegisterPage() {
@@ -47,70 +50,51 @@ export function RegisterPage() {
       footer={
         <>
           Já tem conta?{' '}
-          <Link to="/login" className="text-emerald-400 hover:underline">
+          <Link to="/login" className="text-accent hover:underline">
             Entrar
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {error}
-          </p>
-        )}
+        {error && <Alert>{error}</Alert>}
+        {success && <Alert variant="success">{success}</Alert>}
 
-        {success && (
-          <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-            {success}
-          </p>
-        )}
+        <Input
+          label="Nome"
+          type="text"
+          name="name"
+          required
+          autoComplete="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm text-slate-300">Nome</span>
-          <input
-            type="text"
-            required
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
-          />
-        </label>
+        <Input
+          label="E-mail"
+          type="email"
+          name="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm text-slate-300">E-mail</span>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
-          />
-        </label>
+        <Input
+          label="Senha"
+          type="password"
+          name="password"
+          required
+          autoComplete="new-password"
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          hint="Mínimo de 6 caracteres"
+        />
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm text-slate-300">Senha</span>
-          <input
-            type="password"
-            required
-            autoComplete="new-password"
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
-          />
-          <span className="mt-1 block text-xs text-slate-500">Mínimo de 6 caracteres</span>
-        </label>
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="submit" fullWidth disabled={submitting}>
           {submitting ? 'Criando conta...' : 'Criar conta'}
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   )

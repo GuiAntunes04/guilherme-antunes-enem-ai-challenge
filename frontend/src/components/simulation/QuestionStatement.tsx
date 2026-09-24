@@ -113,14 +113,14 @@ const inlineFormulaStyles =
   '[&_p_img]:mx-0.5 [&_p_img]:inline [&_p_img]:max-h-[1.25em] [&_p_img]:align-middle [&_p_img]:rounded-none [&_p_img]:border-0 [&_p_img]:invert [&_p_img]:hue-rotate-180'
 
 const diagramFigureStyles =
-  '[&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-[28rem] [&_figure_img]:w-full [&_figure_img]:max-w-xl [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-slate-700'
+  '[&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-[28rem] [&_figure_img]:w-full [&_figure_img]:max-w-xl [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-border'
 
 export function QuestionStatement({ html }: QuestionStatementProps) {
   const sanitized = useMemo(() => prepareStatement(html), [html])
 
   return (
     <div
-      className={`question-statement mb-6 text-sm leading-relaxed text-slate-200 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_sub]:text-[0.75em] [&_sup]:text-[0.75em] ${inlineFormulaStyles} ${diagramFigureStyles}`}
+      className={`question-statement mb-6 text-sm leading-relaxed text-muted-foreground [&_p]:mb-3 [&_p:last-child]:mb-0 [&_sub]:text-[0.75em] [&_sup]:text-[0.75em] ${inlineFormulaStyles} ${diagramFigureStyles}`}
       dangerouslySetInnerHTML={{ __html: sanitized }}
     />
   )

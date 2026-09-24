@@ -18,7 +18,7 @@ export function TutorMessageContent({
   return (
     <div
       className={`text-sm leading-relaxed [&_.katex]:text-[1em] ${
-        isUser ? 'text-white' : 'text-slate-200'
+        isUser ? 'text-white' : 'text-muted-foreground'
       }`}
     >
       <ReactMarkdown
@@ -34,7 +34,7 @@ export function TutorMessageContent({
           code: ({ children }) => (
             <code
               className={`rounded px-1 py-0.5 text-[0.85em] ${
-                isUser ? 'bg-emerald-700/60' : 'bg-slate-800 text-emerald-300'
+                isUser ? 'bg-accent-strong/70' : 'bg-surface-overlay text-accent-soft'
               }`}
             >
               {children}

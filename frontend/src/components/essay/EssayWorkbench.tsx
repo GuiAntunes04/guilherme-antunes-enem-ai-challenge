@@ -133,7 +133,7 @@ export function EssayWorkbench({
   }
 
   if (loading) {
-    return <p className="text-slate-400">Carregando redação...</p>
+    return <p className="text-muted">Carregando redação...</p>
   }
 
   if (error && !essay) {
@@ -147,9 +147,9 @@ export function EssayWorkbench({
       <div className="space-y-6">
         <EssayThemePanel theme={essay.theme} motivators={essay.motivators} />
         <EssayFeedbackPanel feedback={essay.aiFeedback} />
-        <details className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-          <summary className="cursor-pointer text-sm text-slate-300">Ver redação enviada</summary>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-400">
+        <details className="rounded-xl border border-border-subtle bg-surface-raised/90 p-4">
+          <summary className="cursor-pointer text-sm text-muted-foreground">Ver redação enviada</summary>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted">
             {essay.content}
           </p>
         </details>
@@ -165,7 +165,7 @@ export function EssayWorkbench({
         onExpire={() => void handleEvaluate()}
       />
     ) : timed && essay.timeLimitSeconds ? (
-      <div className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-mono tabular-nums text-slate-400">
+      <div className="rounded-lg border border-border bg-surface-overlay px-3 py-1.5 text-sm font-mono tabular-nums text-muted">
         {formatTime(essay.timeLimitSeconds)}
       </div>
     ) : null
@@ -173,7 +173,7 @@ export function EssayWorkbench({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-slate-400">{saving ? 'Salvando rascunho...' : 'Rascunho salvo automaticamente'}</p>
+        <p className="text-sm text-muted">{saving ? 'Salvando rascunho...' : 'Rascunho salvo automaticamente'}</p>
         {timerPanel}
       </div>
 
@@ -197,7 +197,7 @@ export function EssayWorkbench({
         type="button"
         disabled={evaluating || content.trim().length < MIN_ESSAY_CHARS}
         onClick={() => void handleEvaluate()}
-        className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+        className="rounded-lg bg-accent-strong px-4 py-2.5 text-sm font-medium text-white hover:bg-accent disabled:opacity-60"
       >
         {evaluating ? 'Corrigindo com IA...' : 'Enviar para correção'}
       </button>

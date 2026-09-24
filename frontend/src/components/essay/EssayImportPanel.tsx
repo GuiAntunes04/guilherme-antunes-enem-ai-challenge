@@ -32,17 +32,17 @@ export function EssayImportPanel({ disabled = false, onImport, onApply }: EssayI
   }
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+    <section className="rounded-xl border border-border-subtle bg-surface-raised/90 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-white">Importar redação</p>
-          <p className="text-xs text-slate-500">Foto, PDF, DOCX ou TXT</p>
+          <p className="text-xs text-muted">Foto, PDF, DOCX ou TXT</p>
         </div>
         <button
           type="button"
           disabled={disabled || loading}
           onClick={() => inputRef.current?.click()}
-          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:border-slate-500 disabled:opacity-60"
+          className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:border-muted disabled:opacity-60"
         >
           {loading ? 'Importando...' : 'Escolher arquivo'}
         </button>
@@ -63,8 +63,8 @@ export function EssayImportPanel({ disabled = false, onImport, onApply }: EssayI
 
       {preview && (
         <div className="mt-4 space-y-3">
-          <p className="text-xs text-slate-500">Prévia do texto extraído</p>
-          <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs leading-relaxed text-slate-300 whitespace-pre-wrap">
+          <p className="text-xs text-muted">Prévia do texto extraído</p>
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
             {preview}
           </div>
           <button
@@ -73,7 +73,7 @@ export function EssayImportPanel({ disabled = false, onImport, onApply }: EssayI
               onApply(preview)
               setPreview(null)
             }}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+            className="rounded-lg bg-accent-strong px-3 py-2 text-sm font-medium text-white hover:bg-accent"
           >
             Usar no editor
           </button>

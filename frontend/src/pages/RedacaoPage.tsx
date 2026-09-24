@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EssayWorkbench } from '../components/essay/EssayWorkbench'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { PageHeader } from '../components/ui/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
 import { fetchEssays, startEssay } from '../lib/essays-api'
+import { cn } from '../lib/cn'
 import type { Essay } from '../types/essay'
 
 export function RedacaoPage() {
@@ -49,41 +54,27 @@ export function RedacaoPage() {
 
   return (
     <div className="max-w-4xl space-y-8">
-      <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-emerald-400">
-          Redação
-        </p>
-        <h1 className="text-3xl font-bold text-white">Corretor de redação ENEM</h1>
-        <p className="mt-3 max-w-2xl text-slate-400">
-          Gere um tema aleatório, escreva sua dissertação ou importe por foto/documento e receba
-          feedback nas 5 competências do ENEM.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Redação"
+        title="Corretor de redação ENEM"
+        description="Gere um tema aleatório, escreva sua dissertação ou importe por foto/documento e receba feedback nas 5 competências do ENEM."
+      />
 
       {!essayId ? (
         <div className="space-y-6">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-            {error && (
-              <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                {error}
-              </p>
-            )}
-            <button
-              type="button"
-              disabled={starting || !token}
-              onClick={() => void handleNewTheme()}
-              className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
-            >
+          <Card padding="lg">
+            {error && <Alert className="mb-4">{error}</Alert>}
+            <Button disabled={starting || !token} onClick={() => void handleNewTheme()}>
               {starting ? 'Gerando tema...' : 'Gerar novo tema'}
-            </button>
-          </div>
+            </Button>
+          </Card>
 
           <section>
-            <h2 className="text-lg font-semibold text-white">Suas redações</h2>
+            <h2 className="font-display text-lg font-semibold text-foreground">Suas redações</h2>
             {loadingHistory ? (
-              <p className="mt-4 text-sm text-slate-400">Carregando histórico...</p>
+              <p className="mt-4 text-sm text-muted">Carregando histórico...</p>
             ) : history.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-400">Nenhuma redação ainda.</p>
+              <p className="mt-4 text-sm text-muted">Nenhuma redação ainda.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {history.map((essay) => (
@@ -91,11 +82,14 @@ export function RedacaoPage() {
                     key={essay.id}
                     type="button"
                     onClick={() => handleOpenEssay(essay)}
-                    className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 px-5 py-4 text-left transition hover:border-emerald-500/40"
+                    className={cn(
+                      'flex w-full items-center justify-between rounded-[var(--radius-card)] border border-border-subtle',
+                      'bg-surface-raised/90 px-5 py-4 text-left transition hover:border-accent/35',
+                    )}
                   >
                     <div>
-                      <p className="font-medium text-white">{essay.theme}</p>
-                      <p className="mt-1 text-sm text-slate-400">
+                      <p className="font-medium text-foreground">{essay.theme}</p>
+                      <p className="mt-1 text-sm text-muted">
                         {new Date(essay.createdAt).toLocaleDateString('pt-BR')}
                         {essay.status === 'done' && essay.aiFeedback
                           ? ` · ${essay.aiFeedback.nota_total}/1000`
@@ -104,7 +98,7 @@ export function RedacaoPage() {
                             : ' · Corrigindo...'}
                       </p>
                     </div>
-                    <span className="text-sm text-emerald-400">Abrir</span>
+                    <span className="text-sm text-accent">Abrir</span>
                   </button>
                 ))}
               </div>
@@ -115,22 +109,17 @@ export function RedacaoPage() {
         <>
           <EssayWorkbench key={essayId} token={token} essayId={essayId} />
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               disabled={starting}
               onClick={() => void handleNewTheme()}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-slate-500"
             >
               {starting ? 'Gerando...' : 'Novo tema'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEssayId(null)}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-slate-500"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => setEssayId(null)}>
               Voltar ao histórico
-            </button>
-            <Link to="/simulados" className="text-sm text-slate-400 hover:text-white">
+            </Button>
+            <Link to="/simulados" className="self-center text-sm text-muted hover:text-foreground">
               Ir para simulados
             </Link>
           </div>

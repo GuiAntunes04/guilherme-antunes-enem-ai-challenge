@@ -40,14 +40,14 @@ export function EssayResultPage({ attemptId }: EssayResultPageProps) {
   }, [token, attemptId])
 
   if (loading) {
-    return <p className="text-slate-400">Carregando resultado...</p>
+    return <p className="text-muted">Carregando resultado...</p>
   }
 
   if (error || !attempt || !essay?.aiFeedback) {
     return (
       <div>
         <p className="text-red-300">{error ?? 'Resultado não encontrado'}</p>
-        <Link to="/simulados" className="mt-4 inline-block text-emerald-400 hover:underline">
+        <Link to="/simulados" className="mt-4 inline-block text-accent hover:underline">
           Voltar
         </Link>
       </div>
@@ -57,13 +57,13 @@ export function EssayResultPage({ attemptId }: EssayResultPageProps) {
   return (
     <div className="max-w-4xl space-y-8">
       <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-emerald-400">
+        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-accent">
           Resultado
         </p>
         <h1 className="text-3xl font-bold text-white">
           {essay.aiFeedback.nota_total}/1000 pontos
         </h1>
-        <p className="mt-2 text-slate-400">
+        <p className="mt-2 text-muted">
           Redação ENEM
           {attempt.elapsed_seconds
             ? ` · ${Math.floor(attempt.elapsed_seconds / 60)} min`
@@ -76,7 +76,7 @@ export function EssayResultPage({ attemptId }: EssayResultPageProps) {
 
       <Link
         to="/simulados"
-        className="inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+        className="inline-block rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-white hover:bg-accent"
       >
         Voltar aos simulados
       </Link>

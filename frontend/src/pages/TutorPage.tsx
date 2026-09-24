@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { TutorChatPanel } from '../components/tutor/TutorChatPanel'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import { PageHeader } from '../components/ui/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
 import {
   createTutorSession,
@@ -100,39 +103,24 @@ export function TutorPage() {
 
   return (
     <div className="max-w-6xl space-y-6">
-      <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-emerald-400">
-          Tutor IA
-        </p>
-        <h1 className="text-3xl font-bold text-white sm:text-4xl">
-          Tire dúvidas com o Gemini
-        </h1>
-        <p className="mt-3 max-w-2xl text-slate-400">
-          Converse sobre matérias, conteúdos e estratégias de estudo para o ENEM.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Tutor IA"
+        title="Tire dúvidas com o Gemini"
+        description="Converse sobre matérias, conteúdos e estratégias de estudo para o ENEM."
+      />
 
-      {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      {error && <Alert>{error}</Alert>}
 
       <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-          <button
-            type="button"
-            onClick={() => void handleNewSession()}
-            disabled={creating}
-            className="mb-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
-          >
+        <aside className="rounded-[var(--radius-card)] border border-border-subtle bg-surface-raised/90 p-4">
+          <Button fullWidth className="mb-4" disabled={creating} onClick={() => void handleNewSession()}>
             {creating ? 'Criando...' : 'Nova conversa'}
-          </button>
+          </Button>
 
           {loading ? (
-            <p className="text-sm text-slate-400">Carregando sessões...</p>
+            <p className="text-sm text-muted">Carregando sessões...</p>
           ) : sessions.length === 0 ? (
-            <p className="text-sm text-slate-500">Nenhuma conversa ainda.</p>
+            <p className="text-sm text-muted">Nenhuma conversa ainda.</p>
           ) : (
             <div className="space-y-2">
               {sessions.map((item) => {
@@ -143,8 +131,8 @@ export function TutorPage() {
                     key={item.id}
                     className={`flex items-start gap-1 rounded-lg border transition ${
                       isActive
-                        ? 'border-emerald-500/50 bg-emerald-500/10'
-                        : 'border-slate-800 hover:border-slate-600'
+                        ? 'border-accent/50 bg-accent/10'
+                        : 'border-border-subtle hover:border-muted'
                     }`}
                   >
                     <button
@@ -155,7 +143,7 @@ export function TutorPage() {
                       <p className="truncate text-sm font-medium text-white">
                         {item.title ?? 'Conversa'}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-muted">
                         {formatSessionDate(item.updatedAt)}
                       </p>
                     </button>
@@ -164,7 +152,7 @@ export function TutorPage() {
                       aria-label="Excluir conversa"
                       disabled={deletingId === item.id}
                       onClick={() => void handleDeleteSession(item.id)}
-                      className="mr-2 mt-2 rounded px-1.5 py-0.5 text-xs text-slate-500 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                      className="mr-2 mt-2 rounded px-1.5 py-0.5 text-xs text-muted hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
                     >
                       ✕
                     </button>
@@ -183,8 +171,8 @@ export function TutorPage() {
               onSessionUpdated={handleSessionUpdated}
             />
           ) : (
-            <div className="flex h-full min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/30 p-6 text-center">
-              <p className="max-w-sm text-sm text-slate-400">
+            <div className="flex h-full min-h-[520px] items-center justify-center rounded-xl border border-dashed border-border bg-surface-raised/30 p-6 text-center">
+              <p className="max-w-sm text-sm text-muted">
                 Crie uma nova conversa para começar a tirar dúvidas com o tutor IA.
               </p>
             </div>

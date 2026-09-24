@@ -177,7 +177,7 @@ export function TutorChatPanel({
 
   return (
     <aside
-      className={`flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 ${
+      className={`flex flex-col rounded-xl border border-border-subtle bg-surface-raised/90 ${
         compact ? 'p-4' : 'p-5'
       } ${mode === 'simulation' ? 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-6rem)]' : 'h-full min-h-[420px]'}`}
     >
@@ -187,7 +187,7 @@ export function TutorChatPanel({
             {title ?? 'Tutor IA — questão atual'}
           </h2>
           {mode === 'simulation' && question && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted">
               {question.subjectName ?? 'Questão'} — ENEM {question.year}
             </p>
           )}
@@ -196,7 +196,7 @@ export function TutorChatPanel({
 
       <div className="mb-4 flex-1 overflow-y-auto pr-1">
         {loading ? (
-          <p className="text-sm text-slate-400">Carregando conversa...</p>
+          <p className="text-sm text-muted">Carregando conversa...</p>
         ) : (
           <TutorMessageList messages={messages} sending={sending} mode={mode} />
         )}

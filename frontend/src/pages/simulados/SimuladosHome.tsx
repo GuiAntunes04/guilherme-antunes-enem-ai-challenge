@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { PageHeader } from '../../components/ui/PageHeader'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   deleteSimulation,
@@ -249,28 +250,21 @@ export function SimuladosHome() {
     : !starting
 
   if (loading) {
-    return <p className="text-slate-400">Carregando simulados...</p>
+    return <p className="text-muted">Carregando simulados...</p>
   }
 
   const selectedMode = SIMULATION_MODES.find((m) => m.value === mode)
 
   return (
     <div className="max-w-5xl space-y-10">
-      <div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-wider text-emerald-400">
-          Simulados
-        </p>
-        <h1 className="text-3xl font-bold text-white sm:text-4xl">
-          Pratique com questões reais do ENEM
-        </h1>
-        <p className="mt-3 max-w-2xl text-slate-400">
-          Questões oficiais via EnemHub — pratique por matéria ou tópico, ou simule o 1º ou 2º dia
-          completo com questões aleatórias de vários anos.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Simulados"
+        title="Pratique com questões reais do ENEM"
+        description="Questões oficiais via EnemHub — pratique por matéria ou tópico, ou simule o 1º ou 2º dia completo com questões aleatórias de vários anos."
+      />
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-        <h2 className="text-lg font-semibold text-white">Novo simulado</h2>
+      <section className="rounded-[var(--radius-card)] border border-border-subtle bg-surface-raised/90 p-6">
+        <h2 className="font-display text-lg font-semibold text-foreground">Novo simulado</h2>
 
         {error && (
           <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -280,11 +274,11 @@ export function SimuladosHome() {
 
         <div className="mt-6 space-y-4">
           <label className="block">
-            <span className="mb-1.5 block text-sm text-slate-300">Tipo de simulado</span>
+            <span className="mb-1.5 block text-sm text-muted-foreground">Tipo de simulado</span>
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as SimulationMode)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
             >
               {SIMULATION_MODES.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -295,18 +289,18 @@ export function SimuladosHome() {
           </label>
 
           {selectedMode && (
-            <p className="text-sm text-slate-500">{selectedMode.description}</p>
+            <p className="text-sm text-muted">{selectedMode.description}</p>
           )}
 
           {isDaySimulation && (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               90 questões distribuídas por disciplina (padrão ENEM), sorteadas entre todos os
               anos disponíveis. Cada simulado é único em relação aos seus anteriores.
             </p>
           )}
 
           {isEssaySimulation && (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               Tema gerado aleatoriamente pela IA. Escreva sua dissertação no tempo configurado e
               receba correção nas 5 competências do ENEM.
             </p>
@@ -316,14 +310,14 @@ export function SimuladosHome() {
             {isSubjectPractice && (
               <>
                 <label className="block">
-                  <span className="mb-1.5 block text-sm text-slate-300">Praticar por</span>
+                  <span className="mb-1.5 block text-sm text-muted-foreground">Praticar por</span>
                   <select
                     value={practiceFilter}
                     onChange={(e) =>
                       handlePracticeFilterChange(e.target.value as SubjectPracticeFilter)
                     }
                     disabled={loadingMeta}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
                   >
                     <option value="subject">Matéria ENEM</option>
                     <option value="topic">Tópico específico</option>
@@ -331,7 +325,7 @@ export function SimuladosHome() {
                 </label>
 
                 <label className="block sm:col-span-2">
-                  <span className="mb-1.5 block text-sm text-slate-300">
+                  <span className="mb-1.5 block text-sm text-muted-foreground">
                     {practiceFilter === 'subject' ? 'Matéria' : 'Tópico'}
                   </span>
                   {practiceFilter === 'subject' ? (
@@ -339,7 +333,7 @@ export function SimuladosHome() {
                       value={subjectName}
                       onChange={(e) => handleSubjectNameChange(e.target.value)}
                       disabled={loadingMeta || practiceSubjects.length === 0}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
                     >
                       {loadingMeta ? (
                         <option value="">Carregando...</option>
@@ -360,7 +354,7 @@ export function SimuladosHome() {
                       value={subjectArea}
                       onChange={(e) => handleSubjectAreaChange(e.target.value)}
                       disabled={loadingMeta || subjectAreas.length === 0}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
                     >
                       {loadingMeta ? (
                         <option value="">Carregando...</option>
@@ -376,13 +370,13 @@ export function SimuladosHome() {
                 </label>
 
                 {practiceFilter === 'subject' && (
-                  <p className="text-sm text-slate-500 sm:col-span-3">
+                  <p className="text-sm text-muted sm:col-span-3">
                     Questões sorteadas entre vários tópicos e anos da matéria selecionada.
                   </p>
                 )}
 
                 <label className="block">
-                  <span className="mb-1.5 block text-sm text-slate-300">Questões</span>
+                  <span className="mb-1.5 block text-sm text-muted-foreground">Questões</span>
                   <select
                     value={questionCount === 'all' ? 'all' : String(questionCount)}
                     onChange={(e) => {
@@ -390,7 +384,7 @@ export function SimuladosHome() {
                       setQuestionCount(value === 'all' ? 'all' : Number(value))
                     }}
                     disabled={loadingMeta || availableCount === 0}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500 disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
                   >
                     {questionOptions.presets.map((count) => (
                       <option key={count} value={count}>
@@ -413,14 +407,14 @@ export function SimuladosHome() {
 
             {(isSubjectPractice || isDaySimulation || isEssaySimulation) && (
               <label className="block">
-                <span className="mb-1.5 block text-sm text-slate-300">Cronômetro</span>
+                <span className="mb-1.5 block text-sm text-muted-foreground">Cronômetro</span>
                 <select
                   value={timeLimitSeconds === null ? 'unlimited' : String(timeLimitSeconds)}
                   onChange={(e) => {
                     const value = e.target.value
                     setTimeLimitSeconds(value === 'unlimited' ? null : Number(value))
                   }}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none focus:border-emerald-500"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
                 >
                   {SIMULATION_TIMER_OPTIONS.map((option) => (
                     <option
@@ -440,7 +434,7 @@ export function SimuladosHome() {
           type="button"
           onClick={handleStart}
           disabled={!canStart}
-          className="mt-6 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-6 rounded-lg bg-accent-strong px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
         >
           {starting
             ? isDaySimulation
@@ -469,7 +463,7 @@ export function SimuladosHome() {
                         (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
                       — {item.disciplineLabel ?? item.discipline}
                     </p>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-sm text-muted">
                       Iniciado em {new Date(item.started_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
@@ -482,7 +476,7 @@ export function SimuladosHome() {
                   aria-label="Excluir simulado em andamento"
                   disabled={deletingId === item.id}
                   onClick={() => void handleDeleteInProgress(item.id)}
-                  className="shrink-0 border-l border-amber-500/20 px-4 text-sm text-slate-400 transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                  className="shrink-0 border-l border-amber-500/20 px-4 text-sm text-muted transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
                 >
                   {deletingId === item.id ? '...' : 'Excluir'}
                 </button>
@@ -496,28 +490,28 @@ export function SimuladosHome() {
         <h2 className="text-lg font-semibold text-white">Histórico</h2>
 
         {history.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-400">Nenhum simulado realizado ainda.</p>
+          <p className="mt-4 text-sm text-muted">Nenhum simulado realizado ainda.</p>
         ) : (
           <div className="mt-4 space-y-3">
             {history.map((item) => (
               <Link
                 key={item.id}
                 to={`/simulados/${item.id}/resultado`}
-                className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/50 px-5 py-4 transition hover:border-emerald-500/40"
+                className="flex items-center justify-between rounded-xl border border-border-subtle bg-surface-raised/90 px-5 py-4 transition hover:border-accent/35"
               >
                 <div>
                   <p className="font-medium text-white">
                     {item.attemptTitle ?? (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
                     — {item.disciplineLabel ?? item.discipline}
                   </p>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="mt-1 text-sm text-muted">
                     {new Date(item.finished_at!).toLocaleDateString('pt-BR')}
                     {item.elapsed_seconds
                       ? ` · ${Math.floor(item.elapsed_seconds / 60)} min`
                       : ''}
                   </p>
                 </div>
-                <p className="text-lg font-bold text-emerald-400">
+                <p className="text-lg font-bold text-accent">
                   {item.score}/{item.total}
                 </p>
               </Link>

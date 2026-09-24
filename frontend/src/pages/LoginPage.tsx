@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 import { useAuth } from '../contexts/AuthContext'
 
 export function LoginPage() {
@@ -34,51 +37,39 @@ export function LoginPage() {
       footer={
         <>
           Não tem conta?{' '}
-          <Link to="/register" className="text-emerald-400 hover:underline">
+          <Link to="/register" className="text-accent hover:underline">
             Criar conta
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {error}
-          </p>
-        )}
+        {error && <Alert>{error}</Alert>}
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm text-slate-300">E-mail</span>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
-          />
-        </label>
+        <Input
+          label="E-mail"
+          type="email"
+          name="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm text-slate-300">Senha</span>
-          <input
-            type="password"
-            required
-            autoComplete="current-password"
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
-          />
-        </label>
+        <Input
+          label="Senha"
+          type="password"
+          name="password"
+          required
+          autoComplete="current-password"
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="submit" fullWidth disabled={submitting}>
           {submitting ? 'Entrando...' : 'Entrar'}
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   )

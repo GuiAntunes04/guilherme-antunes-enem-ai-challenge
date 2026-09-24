@@ -52,7 +52,7 @@ export function SimulationTimer({
       className={`rounded-lg border px-3 py-1.5 text-sm font-mono tabular-nums ${
         isLow
           ? 'border-red-500/50 bg-red-500/10 text-red-300'
-          : 'border-slate-700 bg-slate-800 text-slate-200'
+          : 'border-border bg-surface-overlay text-muted-foreground'
       }`}
     >
       {formatTime(remaining)}

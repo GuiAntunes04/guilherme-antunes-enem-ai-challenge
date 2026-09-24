@@ -239,7 +239,7 @@ export function SimulationQuizPage() {
         onExpire={handleExpire}
       />
     ) : attempt?.time_limit_seconds ? (
-      <div className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-mono tabular-nums text-slate-400">
+      <div className="rounded-lg border border-border bg-surface-overlay px-3 py-1.5 text-sm font-mono tabular-nums text-muted">
         {formatTime(attempt.time_limit_seconds)}
       </div>
     ) : null
@@ -248,22 +248,22 @@ export function SimulationQuizPage() {
     return (
       <div className="max-w-md space-y-3">
         <div className="flex items-center justify-between gap-4">
-          <p className="text-slate-300">Carregando questões...</p>
+          <p className="text-muted-foreground">Carregando questões...</p>
           {timerPanel}
         </div>
         {!quizStartedAt && attempt?.time_limit_seconds && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             O cronômetro inicia quando todas as questões estiverem prontas.
           </p>
         )}
         {loadProgress.total > 0 && (
           <>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               {loadProgress.loaded} de {loadProgress.total} questões
             </p>
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-1.5 overflow-hidden rounded-full bg-surface-overlay">
               <div
-                className="h-full bg-emerald-500 transition-all"
+                className="h-full bg-accent transition-all"
                 style={{
                   width: `${Math.round((loadProgress.loaded / loadProgress.total) * 100)}%`,
                 }}
@@ -279,7 +279,7 @@ export function SimulationQuizPage() {
     return (
       <div>
         <p className="text-red-300">{error}</p>
-        <Link to="/simulados" className="mt-4 inline-block text-emerald-400 hover:underline">
+        <Link to="/simulados" className="mt-4 inline-block text-accent hover:underline">
           Voltar
         </Link>
       </div>
@@ -302,24 +302,24 @@ export function SimulationQuizPage() {
     <div className="max-w-6xl">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             Questão {currentIndex + 1} de {questions.length}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             {answeredCount} respondida{answeredCount !== 1 ? 's' : ''}
           </p>
         </div>
         <div className="flex items-center gap-3">
           {timerPanel}
-          <Link to="/simulados" className="text-sm text-slate-400 hover:text-white">
+          <Link to="/simulados" className="text-sm text-muted hover:text-foreground">
             Cancelar
           </Link>
         </div>
       </div>
 
-      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-surface-overlay">
         <div
-          className="h-full bg-emerald-500 transition-all"
+          className="h-full bg-accent transition-all"
           style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
@@ -345,7 +345,7 @@ export function SimulationQuizPage() {
               type="button"
               disabled={currentIndex === 0}
               onClick={() => setCurrentIndex((i) => i - 1)}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 disabled:opacity-40"
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground disabled:opacity-40"
             >
               Anterior
             </button>
@@ -354,7 +354,7 @@ export function SimulationQuizPage() {
               <button
                 type="button"
                 onClick={() => setCurrentIndex((i) => i + 1)}
-                className="rounded-lg bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700"
+                className="rounded-lg bg-surface-overlay px-4 py-2 text-sm text-white hover:bg-surface-muted"
               >
                 Próxima
               </button>
@@ -363,7 +363,7 @@ export function SimulationQuizPage() {
                 type="button"
                 disabled={!allAnswered || submitting}
                 onClick={() => void submitAnswers()}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+                className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-white hover:bg-accent disabled:opacity-60"
               >
                 {submitting ? 'Enviando...' : 'Finalizar simulado'}
               </button>

@@ -53,14 +53,14 @@ export function EssaySimulationPage() {
   }, [token, attemptId, navigate])
 
   if (loading) {
-    return <p className="text-slate-400">Preparando simulado de redação...</p>
+    return <p className="text-muted">Preparando simulado de redação...</p>
   }
 
   if (error || !essayId || !attemptId) {
     return (
       <div>
         <p className="text-red-300">{error ?? 'Simulado não encontrado'}</p>
-        <Link to="/simulados" className="mt-4 inline-block text-emerald-400 hover:underline">
+        <Link to="/simulados" className="mt-4 inline-block text-accent hover:underline">
           Voltar
         </Link>
       </div>
@@ -71,10 +71,10 @@ export function EssaySimulationPage() {
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-400">Simulado de Redação ENEM</p>
+          <p className="text-sm text-muted">Simulado de Redação ENEM</p>
           <h1 className="text-2xl font-bold text-white">Prova discursiva</h1>
         </div>
-        <Link to="/simulados" className="text-sm text-slate-400 hover:text-white">
+        <Link to="/simulados" className="text-sm text-muted hover:text-foreground">
           Cancelar
         </Link>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { SimulationAnswerSheet } from './simulation/SimulationAnswerSheet'
 import { navItems } from '../config/navigation'
 import { useAuth } from '../contexts/AuthContext'
@@ -7,14 +7,19 @@ import {
   SimulationQuizProvider,
   useSimulationQuizSidebarState,
 } from '../contexts/SimulationQuizContext'
+import { BrandMark } from './ui/BrandMark'
+import { Button } from './ui/Button'
+import { cn } from '../lib/cn'
 
 function navLinkClass(isActive: boolean) {
-  return [
-    'flex flex-col rounded-lg px-3 py-2.5 transition',
+  return cn(
+    'relative flex flex-col rounded-lg px-3 py-2.5 transition',
     isActive
-      ? 'bg-emerald-500/10 text-emerald-400'
-      : 'text-slate-400 hover:bg-slate-800/60 hover:text-white',
-  ].join(' ')
+      ? 'bg-accent/10 text-accent'
+      : 'text-muted hover:bg-surface-overlay hover:text-foreground',
+    isActive &&
+      'before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-accent',
+  )
 }
 
 function DashboardLayoutContent() {
@@ -23,22 +28,27 @@ function DashboardLayoutContent() {
   const quizSidebar = useSimulationQuizSidebarState()
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-7xl">
-        {/* Desktop sidebar */}
-        <aside className="hidden w-64 shrink-0 border-r border-slate-800 md:sticky md:top-0 md:flex md:h-screen md:flex-col">
+    <div className="relative min-h-screen bg-surface text-foreground">
+      <div
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,var(--color-accent-glow),transparent_50%)]"
+        aria-hidden
+      />
+
+      <div className="relative mx-auto flex min-h-screen max-w-7xl">
+        <aside className="hidden w-64 shrink-0 border-r border-border-subtle md:sticky md:top-0 md:flex md:h-screen md:flex-col md:bg-surface-raised/40 md:backdrop-blur-sm">
           <div
-            className={`shrink-0 border-b border-slate-800 px-6 ${quizSidebar ? 'py-3' : 'py-5'}`}
+            className={cn(
+              'shrink-0 border-b border-border-subtle px-5',
+              quizSidebar ? 'py-3' : 'py-5',
+            )}
           >
-            <Link to="/" className="text-lg font-semibold tracking-tight text-white">
-              ENEM Prep AI
-            </Link>
+            <BrandMark to="/" />
             {profile && (
-              <p className="mt-1 truncate text-sm text-slate-400">{profile.name}</p>
+              <p className="mt-3 truncate text-sm text-muted">{profile.name}</p>
             )}
           </div>
 
-          <nav className={`shrink-0 space-y-0.5 ${quizSidebar ? 'px-3 py-2' : 'p-4'}`}>
+          <nav className={cn('shrink-0 space-y-0.5', quizSidebar ? 'px-3 py-2' : 'p-3')}>
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -48,7 +58,7 @@ function DashboardLayoutContent() {
               >
                 <span className="text-sm font-medium">{item.label}</span>
                 {!quizSidebar && (
-                  <span className="mt-0.5 text-xs opacity-70">{item.description}</span>
+                  <span className="mt-0.5 text-xs opacity-75">{item.description}</span>
                 )}
               </NavLink>
             ))}
@@ -66,37 +76,34 @@ function DashboardLayoutContent() {
             </div>
           )}
 
-          <div className={`shrink-0 border-t border-slate-800 ${quizSidebar ? 'p-3' : 'mt-auto p-4'}`}>
-            <button
-              type="button"
-              onClick={() => signOut()}
-              className="w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white"
-            >
+          <div
+            className={cn(
+              'shrink-0 border-t border-border-subtle',
+              quizSidebar ? 'p-3' : 'mt-auto p-3',
+            )}
+          >
+            <Button variant="secondary" fullWidth onClick={() => signOut()}>
               Sair
-            </button>
+            </Button>
           </div>
         </aside>
 
-        {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Mobile header */}
-          <header className="flex items-center justify-between border-b border-slate-800 px-4 py-4 md:hidden">
-            <Link to="/" className="text-lg font-semibold text-white">
-              ENEM Prep AI
-            </Link>
-            <button
-              type="button"
+          <header className="flex items-center justify-between border-b border-border-subtle px-4 py-4 md:hidden">
+            <BrandMark to="/" compact />
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setMenuOpen((open) => !open)}
-              className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300"
               aria-expanded={menuOpen}
               aria-label="Abrir menu"
             >
               Menu
-            </button>
+            </Button>
           </header>
 
           {menuOpen && (
-            <div className="border-b border-slate-800 p-4 md:hidden">
+            <div className="border-b border-border-subtle bg-surface-raised/95 p-4 md:hidden">
               <nav className="space-y-1">
                 {navItems.map((item) => (
                   <NavLink
@@ -112,7 +119,7 @@ function DashboardLayoutContent() {
               </nav>
 
               {quizSidebar && (
-                <div className="mt-4 border-t border-slate-800 pt-4">
+                <div className="mt-4 border-t border-border-subtle pt-4">
                   <SimulationAnswerSheet
                     compact
                     total={quizSidebar.total}
@@ -127,13 +134,9 @@ function DashboardLayoutContent() {
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => signOut()}
-                className="mt-4 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300"
-              >
+              <Button variant="secondary" fullWidth className="mt-4" onClick={() => signOut()}>
                 Sair
-              </button>
+              </Button>
             </div>
           )}
 
