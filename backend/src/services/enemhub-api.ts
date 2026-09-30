@@ -1,4 +1,5 @@
 import { env } from '../config/env.js'
+import { isEnemHubQuotaResponse } from '../lib/enemhub-error.js'
 import type {
   EnemHubListResponse,
   EnemHubQuestion,
@@ -20,31 +21,64 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function enemhubFetch(url: string): Promise<Response> {
-  if (!env.enemhubApiKey) {
+  const keys = env.enemhubApiKeys
+
+  if (keys.length === 0) {
     throw new Error('ENEMHUB_API_KEY não configurada no backend')
   }
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
-    const response = await fetch(url, {
-      headers: { 'X-API-Key': env.enemhubApiKey },
-    })
+  let lastError: Error | null = null
 
-    if (response.status === 429) {
-      const retryAfter = Number(response.headers.get('Retry-After') ?? 5)
-      const backoffMs = Math.min(retryAfter * Math.pow(1.5, attempt), 30) * 1000
-      await sleep(backoffMs)
+  for (let keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+    const apiKey = keys[keyIndex]
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
+      const response = await fetch(url, {
+        headers: { 'X-API-Key': apiKey },
+      })
+
+      if (response.status === 429) {
+        const retryAfter = Number(response.headers.get('Retry-After') ?? 5)
+        const backoffMs = Math.min(retryAfter * Math.pow(1.5, attempt), 30) * 1000
+        await sleep(backoffMs)
+        continue
+      }
+
+      if (!response.ok) {
+        const body = await response.text()
+
+        if (isEnemHubQuotaResponse(response.status, body) && keyIndex < keys.length - 1) {
+          console.warn('[enemhub] limite excedido, trocando chave', {
+            status: response.status,
+            keyIndex: keyIndex + 1,
+            totalKeys: keys.length,
+          })
+          lastError = new Error(`EnemHub API error ${response.status}: ${body}`)
+          break
+        }
+
+        throw new Error(`EnemHub API error ${response.status}: ${body}`)
+      }
+
+      return response
+    }
+
+    if (keyIndex < keys.length - 1) {
+      console.warn('[enemhub] rate limit persistente nesta chave, trocando chave', {
+        keyIndex: keyIndex + 1,
+        totalKeys: keys.length,
+      })
+      lastError ??= new Error(`EnemHub API rate limit persistente após ${MAX_RETRIES} tentativas`)
       continue
     }
 
-    if (!response.ok) {
-      const body = await response.text()
-      throw new Error(`EnemHub API error ${response.status}: ${body}`)
-    }
-
-    return response
+    throw (
+      lastError ??
+      new Error(`EnemHub API rate limit persistente após ${MAX_RETRIES} tentativas`)
+    )
   }
 
-  throw new Error(`EnemHub API rate limit persistente após ${MAX_RETRIES} tentativas`)
+  throw lastError ?? new Error('EnemHub API: todas as chaves esgotadas ou indisponíveis')
 }
 
 function buildListUrl(params: Record<string, string>): string {

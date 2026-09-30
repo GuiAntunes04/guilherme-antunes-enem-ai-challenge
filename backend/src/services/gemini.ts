@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { env } from '../config/env.js'
 import type { EssayFeedback, EssayTheme } from '../types/essay.js'
 import {
   getEssayEvaluationSystemPrompt,
   getEssayOcrSystemPrompt,
   getEssayThemeSystemPrompt,
 } from './essay-prompt.js'
+import { withGeminiFallback } from './gemini-resilience.js'
 
 export type TutorChatMessage = {
   role: 'user' | 'assistant'
@@ -14,12 +14,8 @@ export type TutorChatMessage = {
 
 const MAX_HISTORY_MESSAGES = 20
 
-function getClient(): GoogleGenerativeAI {
-  if (!env.geminiApiKey) {
-    throw new Error('GEMINI_API_KEY não configurada no backend')
-  }
-
-  return new GoogleGenerativeAI(env.geminiApiKey)
+function getClient(apiKey: string): GoogleGenerativeAI {
+  return new GoogleGenerativeAI(apiKey)
 }
 
 function truncateHistory(messages: TutorChatMessage[]): TutorChatMessage[] {
@@ -31,26 +27,28 @@ export async function generateTutorReply(
   history: TutorChatMessage[],
   userMessage: string,
 ): Promise<string> {
-  const model = getClient().getGenerativeModel({
-    model: env.geminiModel,
-    systemInstruction: systemPrompt,
+  return withGeminiFallback(async (apiKey, model) => {
+    const generativeModel = getClient(apiKey).getGenerativeModel({
+      model,
+      systemInstruction: systemPrompt,
+    })
+
+    const chat = generativeModel.startChat({
+      history: truncateHistory(history).map((message) => ({
+        role: message.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: message.content }],
+      })),
+    })
+
+    const result = await chat.sendMessage(userMessage)
+    const text = result.response.text().trim()
+
+    if (!text) {
+      throw new Error('Gemini retornou resposta vazia')
+    }
+
+    return text
   })
-
-  const chat = model.startChat({
-    history: truncateHistory(history).map((message) => ({
-      role: message.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: message.content }],
-    })),
-  })
-
-  const result = await chat.sendMessage(userMessage)
-  const text = result.response.text().trim()
-
-  if (!text) {
-    throw new Error('Gemini retornou resposta vazia')
-  }
-
-  return text
 }
 
 function stripJsonFence(text: string): string {
@@ -65,79 +63,85 @@ function parseJsonResponse<T>(text: string): T {
 }
 
 export async function generateEssayTheme(): Promise<EssayTheme> {
-  const model = getClient().getGenerativeModel({
-    model: env.geminiModel,
-    systemInstruction: getEssayThemeSystemPrompt(),
+  return withGeminiFallback(async (apiKey, model) => {
+    const generativeModel = getClient(apiKey).getGenerativeModel({
+      model,
+      systemInstruction: getEssayThemeSystemPrompt(),
+    })
+
+    const result = await generativeModel.generateContent(
+      'Gere um novo tema de redação dissertativo-argumentativa para prática do ENEM.',
+    )
+    const text = result.response.text().trim()
+
+    if (!text) {
+      throw new Error('Gemini retornou tema vazio')
+    }
+
+    const theme = parseJsonResponse<EssayTheme>(text)
+
+    if (!theme.title?.trim() || !Array.isArray(theme.motivators) || theme.motivators.length < 2) {
+      throw new Error('Formato de tema inválido retornado pelo Gemini')
+    }
+
+    return {
+      title: theme.title.trim(),
+      motivators: theme.motivators.map((item) => String(item).trim()).filter(Boolean).slice(0, 3),
+    }
   })
-
-  const result = await model.generateContent(
-    'Gere um novo tema de redação dissertativo-argumentativa para prática do ENEM.',
-  )
-  const text = result.response.text().trim()
-
-  if (!text) {
-    throw new Error('Gemini retornou tema vazio')
-  }
-
-  const theme = parseJsonResponse<EssayTheme>(text)
-
-  if (!theme.title?.trim() || !Array.isArray(theme.motivators) || theme.motivators.length < 2) {
-    throw new Error('Formato de tema inválido retornado pelo Gemini')
-  }
-
-  return {
-    title: theme.title.trim(),
-    motivators: theme.motivators.map((item) => String(item).trim()).filter(Boolean).slice(0, 3),
-  }
 }
 
 export async function evaluateEssay(theme: string, content: string): Promise<EssayFeedback> {
-  const model = getClient().getGenerativeModel({
-    model: env.geminiModel,
-    systemInstruction: getEssayEvaluationSystemPrompt(theme, content),
+  return withGeminiFallback(async (apiKey, model) => {
+    const generativeModel = getClient(apiKey).getGenerativeModel({
+      model,
+      systemInstruction: getEssayEvaluationSystemPrompt(theme, content),
+    })
+
+    const result = await generativeModel.generateContent('Avalie a redação conforme instruções.')
+    const text = result.response.text().trim()
+
+    if (!text) {
+      throw new Error('Gemini retornou correção vazia')
+    }
+
+    const feedback = parseJsonResponse<EssayFeedback>(text)
+    const competencies = feedback.competencias
+
+    if (!competencies?.c1 || !competencies.c2 || !competencies.c3 || !competencies.c4 || !competencies.c5) {
+      throw new Error('Correção incompleta retornada pelo Gemini')
+    }
+
+    const notaTotal = Object.values(competencies).reduce((sum, item) => sum + (item.nota ?? 0), 0)
+
+    return {
+      competencias: competencies,
+      nota_total: feedback.nota_total ?? notaTotal,
+      comentario_geral: feedback.comentario_geral?.trim() || 'Correção concluída.',
+    }
   })
-
-  const result = await model.generateContent('Avalie a redação conforme instruções.')
-  const text = result.response.text().trim()
-
-  if (!text) {
-    throw new Error('Gemini retornou correção vazia')
-  }
-
-  const feedback = parseJsonResponse<EssayFeedback>(text)
-  const competencies = feedback.competencias
-
-  if (!competencies?.c1 || !competencies.c2 || !competencies.c3 || !competencies.c4 || !competencies.c5) {
-    throw new Error('Correção incompleta retornada pelo Gemini')
-  }
-
-  const notaTotal = Object.values(competencies).reduce((sum, item) => sum + (item.nota ?? 0), 0)
-
-  return {
-    competencias: competencies,
-    nota_total: feedback.nota_total ?? notaTotal,
-    comentario_geral: feedback.comentario_geral?.trim() || 'Correção concluída.',
-  }
 }
 
 export async function extractEssayTextFromImage(
   base64Data: string,
   mimeType: string,
 ): Promise<string> {
-  const model = getClient().getGenerativeModel({
-    model: env.geminiModel,
-    systemInstruction: getEssayOcrSystemPrompt(),
+  return withGeminiFallback(async (apiKey, model) => {
+    const generativeModel = getClient(apiKey).getGenerativeModel({
+      model,
+      systemInstruction: getEssayOcrSystemPrompt(),
+    })
+
+    const result = await generativeModel.generateContent([
+      { inlineData: { data: base64Data, mimeType } },
+      { text: 'Extraia o texto desta redação.' },
+    ])
+
+    const text = result.response.text().trim()
+    if (!text) {
+      throw new Error('Não foi possível extrair texto da imagem')
+    }
+
+    return text
   })
-
-  const result = await model.generateContent([
-    { inlineData: { data: base64Data, mimeType } },
-    { text: 'Extraia o texto desta redação.' },
-  ])
-
-  const text = result.response.text().trim()
-  if (!text) {
-    throw new Error('Não foi possível extrair texto da imagem')
-  }
-
-  return text
 }

@@ -120,8 +120,11 @@ npm run dev
 | `SUPABASE_SECRET_KEY` | Secret key (somente backend) |
 | `SUPABASE_JWKS_URL` | `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` |
 | `GEMINI_API_KEY` | Google AI Studio |
+| `GEMINI_API_KEYS` | (Opcional) Chaves extras, separadas por vírgula — fallback em quota/rate limit |
 | `GEMINI_MODEL` | Modelo Gemini (padrão: `gemini-3.5-flash-lite`) |
+| `GEMINI_MODEL_FALLBACKS` | (Opcional) Modelos alternativos se o principal estiver sobrecarregado |
 | `ENEMHUB_API_KEY` | EnemHub — produto ENEM |
+| `ENEMHUB_API_KEYS` | (Opcional) Chaves extras — fallback em rate limit |
 | `FRONTEND_URL` | `http://localhost:5173` (lista separada por vírgula para CORS) |
 
 Servidor: `http://localhost:3001`
