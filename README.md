@@ -1,8 +1,8 @@
 # ENEM Prep AI
 
-Plataforma web de estudos para o ENEM — desafio de estágio [Hyperflow](https://github.com/hyperflow-global/desafio-estagio).
+Plataforma web de estudos para o ENEM — simulados, tutor com IA e correção de redação.
 
-## Demo
+## Acesso
 
 | Ambiente | URL |
 |----------|-----|
@@ -40,7 +40,7 @@ O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ens
 
 ## Screenshots
 
-Capturas do deploy em [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/). Arquivos em [`docs/screenshots/`](docs/screenshots/).
+Capturas da aplicação em [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/). Arquivos em [`docs/screenshots/`](docs/screenshots/).
 
 ### Autenticação
 
@@ -179,16 +179,6 @@ cd backend
 npm test
 ```
 
-## Roadmap de desenvolvimento
-
-- [x] **Fase 0** — Setup do monorepo (frontend + backend)
-- [x] **Fase 1** — Supabase (schema, RLS, auth middleware)
-- [x] **Fase 2** — Autenticação (login, registro, sessão)
-- [x] **Fase 3** — Dashboard do estudante
-- [x] **Fase 4** — Simulados com EnemHub + histórico
-- [x] **Fase 5** — Tutor IA + Corretor de redação (Gemini)
-- [x] **Fase 6** — Deploy (Vercel + Render), URLs e screenshots
-
 ## EnemHub API
 
 Proxy no backend: `https://api.enemhub.com.br/v1/enem/questions`
@@ -204,4 +194,4 @@ O sync inicial usa a API de listagem (~50 requests). Simulados em produção lee
 
 ## Licença
 
-Projeto desenvolvido para fins educacionais e processo seletivo.
+Projeto de código aberto para fins educacionais.
