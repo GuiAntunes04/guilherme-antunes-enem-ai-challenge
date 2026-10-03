@@ -83,16 +83,16 @@ function DashboardLayoutContent() {
   }, [sidebarCollapsed])
 
   return (
-    <div className="relative min-h-screen bg-surface text-foreground">
+    <div className="relative min-h-dvh overflow-x-hidden bg-surface text-foreground">
       <div
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,var(--color-accent-glow),transparent_50%)]"
         aria-hidden
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-7xl">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-7xl">
         <aside
           className={cn(
-            'hidden shrink-0 border-r border-border-subtle md:sticky md:top-0 md:flex md:h-screen md:flex-col md:bg-surface-raised/40 md:backdrop-blur-sm',
+            'hidden shrink-0 border-r border-border-subtle md:sticky md:top-0 md:flex md:h-dvh md:max-h-dvh md:flex-col md:bg-surface-raised/40 md:backdrop-blur-sm',
             'transition-[width] duration-200 ease-out motion-reduce:transition-none',
             sidebarNarrow ? 'w-[4.5rem]' : 'w-64',
           )}
@@ -220,7 +220,7 @@ function DashboardLayoutContent() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-border-subtle px-4 py-4 md:hidden">
+          <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
             <BrandMark to="/" compact />
             <Button
               variant="secondary"
@@ -271,7 +271,7 @@ function DashboardLayoutContent() {
             </div>
           )}
 
-          <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+          <main className="min-w-0 flex-1 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8">
             <Outlet />
           </main>
         </div>

@@ -34,22 +34,44 @@ export function LoginPage() {
     <AuthLayout
       title="Entrar"
       subtitle="Acesse sua conta para continuar estudando"
+      navLink={{ to: '/register', label: 'Criar conta' }}
+      marketing={{
+        eyebrow: 'ENEM Prep AI',
+        headline: 'Estude para o ENEM com simulados, tutor IA e redação',
+        subheadline: 'Sua preparação em um só lugar.',
+        body: (
+          <>
+            Faça simulados com questões reais, tire dúvidas com o tutor inteligente e receba
+            correção de redação nas cinco competências do exame.
+          </>
+        ),
+        bullets: [
+          'Simulados por matéria ou prova completa',
+          'Tutor IA contextualizado nas questões',
+          'Redação com feedback C1–C5',
+        ],
+      }}
       footer={
         <>
           Não tem conta?{' '}
-          <Link to="/register" className="text-accent hover:underline">
+          <Link to="/register" className="font-medium text-accent-strong hover:underline">
             Criar conta
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <Alert>{error}</Alert>}
+        {error && (
+          <Alert tone="light" variant="error">
+            {error}
+          </Alert>
+        )}
 
         <Input
           label="E-mail"
           type="email"
           name="email"
+          tone="light"
           required
           autoComplete="email"
           value={email}
@@ -60,6 +82,7 @@ export function LoginPage() {
           label="Senha"
           type="password"
           name="password"
+          tone="light"
           required
           autoComplete="current-password"
           minLength={6}
@@ -67,7 +90,7 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <Button type="submit" fullWidth disabled={submitting}>
+        <Button type="submit" size="lg" fullWidth disabled={submitting} className="mt-2">
           {submitting ? 'Entrando...' : 'Entrar'}
         </Button>
       </form>

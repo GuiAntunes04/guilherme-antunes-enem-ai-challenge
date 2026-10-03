@@ -7,16 +7,6 @@ type BackgroundVideoProps = {
   src?: string
 }
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function prefersMobileLayout(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(max-width: 768px)').matches
-}
-
 export function BackgroundVideo({
   className,
   overlayClassName,
@@ -25,7 +15,15 @@ export function BackgroundVideo({
   const [showVideo, setShowVideo] = useState(false)
 
   useEffect(() => {
-    setShowVideo(!prefersReducedMotion() && !prefersMobileLayout())
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+    function sync() {
+      setShowVideo(!media.matches)
+    }
+
+    sync()
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
   }, [])
 
   if (!showVideo) {

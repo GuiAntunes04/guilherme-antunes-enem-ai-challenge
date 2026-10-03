@@ -46,24 +46,50 @@ export function RegisterPage() {
   return (
     <AuthLayout
       title="Criar conta"
-      subtitle="Comece a se preparar para o ENEM"
+      subtitle="Comece a se preparar para o ENEM hoje"
+      navLink={{ to: '/login', label: 'Entrar' }}
+      marketing={{
+        eyebrow: 'Comece grátis',
+        headline: 'Monte sua rotina de estudos com apoio de IA',
+        subheadline: 'Cadastro rápido, foco no que importa para a prova.',
+        body: (
+          <>
+            Crie sua conta e acesse simulados, chat com tutor e correção de redação alinhados ao
+            formato do ENEM.
+          </>
+        ),
+        bullets: [
+          'Dashboard com evolução por matéria',
+          'Cronômetro nos simulados',
+          'Temas e correção de redação com IA',
+        ],
+      }}
       footer={
         <>
           Já tem conta?{' '}
-          <Link to="/login" className="text-accent hover:underline">
+          <Link to="/login" className="font-medium text-accent-strong hover:underline">
             Entrar
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <Alert>{error}</Alert>}
-        {success && <Alert variant="success">{success}</Alert>}
+        {error && (
+          <Alert tone="light" variant="error">
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert tone="light" variant="success">
+            {success}
+          </Alert>
+        )}
 
         <Input
           label="Nome"
           type="text"
           name="name"
+          tone="light"
           required
           autoComplete="name"
           value={name}
@@ -74,6 +100,7 @@ export function RegisterPage() {
           label="E-mail"
           type="email"
           name="email"
+          tone="light"
           required
           autoComplete="email"
           value={email}
@@ -84,6 +111,7 @@ export function RegisterPage() {
           label="Senha"
           type="password"
           name="password"
+          tone="light"
           required
           autoComplete="new-password"
           minLength={6}
@@ -92,7 +120,7 @@ export function RegisterPage() {
           hint="Mínimo de 6 caracteres"
         />
 
-        <Button type="submit" fullWidth disabled={submitting}>
+        <Button type="submit" size="lg" fullWidth disabled={submitting} className="mt-2">
           {submitting ? 'Criando conta...' : 'Criar conta'}
         </Button>
       </form>

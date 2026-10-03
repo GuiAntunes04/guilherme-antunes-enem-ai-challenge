@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { cn } from '../../lib/cn'
 
+const LOGO_WORDMARK_SRC = '/brand/logo-wordmark.png'
 const LOGO_MARK_SRC = '/brand/logo-mark.png'
 
 type BrandMarkProps = {
@@ -9,33 +10,41 @@ type BrandMarkProps = {
   compact?: boolean
 }
 
+function LogoWordmark({ className }: { className?: string }) {
+  return (
+    <img
+      src={LOGO_WORDMARK_SRC}
+      alt="ENEM Prep"
+      className={cn(
+        'h-7 w-auto max-w-[min(100%,11rem)] shrink-0 object-contain sm:h-8 md:h-9 md:max-w-[min(100%,13.5rem)]',
+        className,
+      )}
+      width={965}
+      height={190}
+      decoding="async"
+    />
+  )
+}
+
 function LogoMark({ className }: { className?: string }) {
   return (
     <img
       src={LOGO_MARK_SRC}
       alt=""
       className={cn('shrink-0 object-contain', className)}
-      width={222}
-      height={154}
+      width={145}
+      height={131}
       decoding="async"
     />
   )
 }
 
-function LogoWordmark() {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className="font-sans text-xl font-bold leading-none tracking-tight text-foreground">
-        ENE
-      </span>
-      <LogoMark className="h-9 w-auto" />
-      <span className="font-sans text-sm font-normal leading-none text-foreground/95">Prep</span>
-    </span>
-  )
-}
-
 export function BrandMark({ className, to = '/', compact = false }: BrandMarkProps) {
-  const content = compact ? <LogoMark className="h-10 w-auto max-w-[2.75rem]" /> : <LogoWordmark />
+  const content = compact ? (
+    <LogoMark className="h-9 w-auto max-w-[2.5rem] sm:h-10 sm:max-w-[2.75rem]" />
+  ) : (
+    <LogoWordmark />
+  )
 
   const wrapperClass = cn('inline-flex items-center', className)
 

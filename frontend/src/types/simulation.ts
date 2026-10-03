@@ -9,7 +9,7 @@ export const SIMULATION_MODES: { value: SimulationMode; label: string; descripti
   {
     value: 'subject_practice',
     label: 'Matéria específica',
-    description: 'Questões aleatórias por tópico, com cronômetro configurável',
+    description: 'Questões aleatórias por conteúdo específico',
   },
   {
     value: 'day_one',
