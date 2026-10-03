@@ -54,15 +54,16 @@ export function AuthLayout({
         <div
           className={cn(
             'flex min-h-0 flex-1 flex-col justify-center gap-8 py-6',
-            'md:gap-10 md:py-8',
-            'lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12 lg:py-10 xl:gap-14',
+            'max-md:mx-auto max-md:w-full max-md:max-w-xl',
+            'md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-10 md:py-8',
+            'lg:gap-12 lg:py-10 xl:gap-14',
           )}
         >
           <section
             className={cn(
-              'order-1 w-full min-w-0 max-w-md justify-self-center',
-              'rounded-2xl bg-white p-5 shadow-2xl shadow-black/35 sm:max-w-lg sm:p-8',
-              'lg:order-2 lg:max-w-none lg:justify-self-end',
+              'order-2 w-full min-w-0 max-w-lg',
+              'rounded-2xl bg-white p-5 shadow-2xl shadow-black/35 sm:p-8',
+              'md:order-2 md:max-w-none md:justify-self-end',
             )}
           >
             <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{title}</p>
@@ -71,11 +72,11 @@ export function AuthLayout({
             <p className="mt-5 text-center text-sm text-neutral-600 sm:mt-6">{footer}</p>
           </section>
 
-          <aside className="order-2 min-w-0 max-w-xl lg:order-1">
+          <aside className="order-1 min-w-0 w-full md:order-1 md:max-w-none">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-accent-soft sm:text-xs sm:tracking-[0.2em]">
               {marketing.eyebrow}
             </p>
-            <h1 className="mt-3 font-display text-2xl font-bold leading-tight text-white sm:mt-4 sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-[1.15] xl:text-[2.65rem]">
+            <h1 className="mt-3 font-display text-2xl font-bold leading-tight text-white sm:mt-4 sm:text-3xl md:text-[2rem] md:leading-[1.15] lg:text-[2.5rem] xl:text-[2.65rem]">
               {marketing.headline}
             </h1>
             {marketing.subheadline && (
