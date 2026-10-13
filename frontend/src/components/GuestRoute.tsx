@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export function GuestRoute() {
-  const { session, loading } = useAuth()
+  const { session, loading, recoveringPassword } = useAuth()
 
   if (loading) {
     return (
@@ -12,7 +12,7 @@ export function GuestRoute() {
     )
   }
 
-  if (session) {
+  if (session && !recoveringPassword) {
     return <Navigate to="/" replace />
   }
 

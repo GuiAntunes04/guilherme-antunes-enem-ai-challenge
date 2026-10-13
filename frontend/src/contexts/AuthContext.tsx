@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import { translateAuthError } from '../lib/auth-errors'
 import { fetchMe, type Profile } from '../lib/api'
 import { supabase } from '../lib/supabase'
 
@@ -23,6 +24,9 @@ type AuthContextValue = {
     password: string,
   ) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
+  recoveringPassword: boolean
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (password: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -32,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recoveringPassword, setRecoveringPassword] = useState(false)
 
   const loadProfile = useCallback(async (accessToken: string) => {
     try {
@@ -65,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveringPassword(true)
+      }
+
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
 
@@ -87,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error?.message ?? null }
+    return { error: translateAuthError(error?.message) }
   }, [])
 
   const signUp = useCallback(
@@ -101,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       return {
-        error: error?.message ?? null,
+        error: translateAuthError(error?.message),
         needsEmailConfirmation: Boolean(data.user && !data.session),
       }
     },
@@ -111,6 +120,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setProfile(null)
+    setRecoveringPassword(false)
+  }, [])
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return { error: translateAuthError(error?.message) }
+  }, [])
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (!error) {
+      setRecoveringPassword(false)
+    }
+    return { error: translateAuthError(error?.message) }
   }, [])
 
   const value = useMemo(
@@ -122,8 +147,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      recoveringPassword,
+      requestPasswordReset,
+      updatePassword,
     }),
-    [user, session, profile, loading, signIn, signUp, signOut],
+    [
+      user,
+      session,
+      profile,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      recoveringPassword,
+      requestPasswordReset,
+      updatePassword,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

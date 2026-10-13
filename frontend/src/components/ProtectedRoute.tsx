@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ProtectedRoute() {
-  const { session, loading } = useAuth()
+  const { session, loading, recoveringPassword } = useAuth()
 
   if (loading) {
     return (
@@ -14,6 +14,10 @@ export function ProtectedRoute() {
 
   if (!session) {
     return <Navigate to="/login" replace />
+  }
+
+  if (recoveringPassword) {
+    return <Navigate to="/reset-password" replace />
   }
 
   return <Outlet />

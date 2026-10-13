@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
+import { Input, PasswordInput } from '../components/ui/Input'
 import { useAuth } from '../contexts/AuthContext'
 
 export function LoginPage() {
@@ -78,9 +78,8 @@ export function LoginPage() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <Input
+        <PasswordInput
           label="Senha"
-          type="password"
           name="password"
           tone="light"
           required
@@ -89,6 +88,15 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        <div className="flex justify-end">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-accent-strong hover:underline"
+          >
+            Esqueci a senha
+          </Link>
+        </div>
 
         <Button type="submit" size="lg" fullWidth disabled={submitting} className="mt-2">
           {submitting ? 'Entrando...' : 'Entrar'}
