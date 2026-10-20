@@ -135,6 +135,16 @@ export async function importEssayFile(
   return response.json() as Promise<{ extractedText: string }>
 }
 
+export async function deleteEssay(token: string, essayId: string): Promise<void> {
+  const response = await authFetch(`/api/essays/${essayId}`, token, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao excluir redação')
+  }
+}
+
 export async function evaluateEssay(
   token: string,
   essayId: string,

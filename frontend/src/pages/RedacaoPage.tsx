@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EssayWorkbench } from '../components/essay/EssayWorkbench'
 import { Alert } from '../components/ui/Alert'
@@ -6,29 +6,45 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
-import { fetchEssays, startEssay } from '../lib/essays-api'
-import { cn } from '../lib/cn'
+import { deleteEssay, fetchEssays, startEssay } from '../lib/essays-api'
 import type { Essay } from '../types/essay'
+
+function upsertEssay(list: Essay[], essay: Essay): Essay[] {
+  return [essay, ...list.filter((item) => item.id !== essay.id)]
+}
+
+function isEssayInProgress(essay: Essay): boolean {
+  return essay.status !== 'done'
+}
 
 export function RedacaoPage() {
   const { session } = useAuth()
   const token = session?.access_token ?? ''
 
   const [essayId, setEssayId] = useState<string | null>(null)
-  const [history, setHistory] = useState<Essay[]>([])
+  const [essays, setEssays] = useState<Essay[]>([])
   const [starting, setStarting] = useState(false)
-  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [loadingList, setLoadingList] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const inProgress = useMemo(() => essays.filter(isEssayInProgress), [essays])
+  const finished = useMemo(() => essays.filter((essay) => essay.status === 'done'), [essays])
+
+  const openEssay = useMemo(
+    () => (essayId ? essays.find((item) => item.id === essayId) : undefined),
+    [essays, essayId],
+  )
 
   useEffect(() => {
     if (!token) return
 
     fetchEssays(token, 'redacao')
-      .then(({ essays }) => setHistory(essays))
+      .then(({ essays: loaded }) => setEssays(loaded))
       .catch(() => {
-        /* history is optional on first load */
+        /* list is optional on first load */
       })
-      .finally(() => setLoadingHistory(false))
+      .finally(() => setLoadingList(false))
   }, [token])
 
   async function handleNewTheme() {
@@ -40,7 +56,7 @@ export function RedacaoPage() {
     try {
       const { essay } = await startEssay(token)
       setEssayId(essay.id)
-      setHistory((current) => [essay, ...current.filter((item) => item.id !== essay.id)])
+      setEssays((current) => upsertEssay(current, essay))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao gerar tema')
     } finally {
@@ -48,8 +64,34 @@ export function RedacaoPage() {
     }
   }
 
-  function handleOpenEssay(essay: Essay) {
-    setEssayId(essay.id)
+  function handleOpenEssay(id: string) {
+    setEssayId(id)
+  }
+
+  function handleEssayEvaluated(essay: Essay) {
+    setEssays((current) => upsertEssay(current, essay))
+  }
+
+  async function handleDeleteEssay(targetId: string) {
+    if (!token || deletingId) return
+
+    const confirmed = window.confirm(
+      'Excluir esta redação? Esta ação não pode ser desfeita.',
+    )
+    if (!confirmed) return
+
+    setDeletingId(targetId)
+    setError(null)
+
+    try {
+      await deleteEssay(token, targetId)
+      setEssays((current) => current.filter((item) => item.id !== targetId))
+      setEssayId((current) => (current === targetId ? null : current))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir redação')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -69,45 +111,98 @@ export function RedacaoPage() {
             </Button>
           </Card>
 
-          <section>
-            <h2 className="font-display text-lg font-semibold text-foreground">Suas redações</h2>
-            {loadingHistory ? (
-              <p className="mt-4 text-sm text-muted">Carregando histórico...</p>
-            ) : history.length === 0 ? (
-              <p className="mt-4 text-sm text-muted">Nenhuma redação ainda.</p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {history.map((essay) => (
-                  <button
-                    key={essay.id}
-                    type="button"
-                    onClick={() => handleOpenEssay(essay)}
-                    className={cn(
-                      'flex w-full items-center justify-between rounded-[var(--radius-card)] border border-border-subtle',
-                      'bg-surface-raised/90 px-5 py-4 text-left transition hover:border-accent/35',
-                    )}
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{essay.theme}</p>
-                      <p className="mt-1 text-sm text-muted">
-                        {new Date(essay.createdAt).toLocaleDateString('pt-BR')}
-                        {essay.status === 'done' && essay.aiFeedback
-                          ? ` · ${essay.aiFeedback.nota_total}/1000`
-                          : essay.status === 'draft'
-                            ? ' · Rascunho'
-                            : ' · Corrigindo...'}
-                      </p>
-                    </div>
-                    <span className="text-sm text-accent">Abrir</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
+          {loadingList ? (
+            <p className="text-sm text-muted">Carregando redações...</p>
+          ) : (
+            <>
+              {inProgress.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-semibold text-white">Em andamento</h2>
+                  <div className="mt-4 space-y-3">
+                    {inProgress.map((essay) => (
+                      <div
+                        key={essay.id}
+                        className="flex items-stretch overflow-hidden rounded-xl border border-amber-500/30 bg-amber-500/5 transition hover:border-amber-400/50"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEssay(essay.id)}
+                          className="flex min-w-0 flex-1 items-center justify-between px-5 py-4 text-left"
+                        >
+                          <div className="min-w-0 pr-4">
+                            <p className="font-medium text-white">{essay.theme}</p>
+                            <p className="mt-1 text-sm text-muted">
+                              Iniciada em {new Date(essay.createdAt).toLocaleDateString('pt-BR')}
+                              {essay.status === 'evaluating'
+                                ? ' · Corrigindo...'
+                                : ' · Rascunho'}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-sm font-medium text-amber-300">
+                            Continuar
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Excluir redação em andamento"
+                          disabled={deletingId === essay.id || essay.status === 'evaluating'}
+                          onClick={() => void handleDeleteEssay(essay.id)}
+                          className="shrink-0 border-l border-amber-500/20 px-4 text-sm text-muted transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                        >
+                          {deletingId === essay.id ? '...' : 'Excluir'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section>
+                <h2 className="text-lg font-semibold text-white">Histórico</h2>
+                {finished.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted">Nenhuma redação corrigida ainda.</p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {finished.map((essay) => (
+                      <button
+                        key={essay.id}
+                        type="button"
+                        onClick={() => handleOpenEssay(essay.id)}
+                        className="flex w-full items-center justify-between rounded-xl border border-border-subtle bg-surface-raised/90 px-5 py-4 text-left transition hover:border-accent/35"
+                      >
+                        <div className="min-w-0 pr-4">
+                          <p className="font-medium text-white">{essay.theme}</p>
+                          <p className="mt-1 text-sm text-muted">
+                            {new Date(essay.finishedAt ?? essay.createdAt).toLocaleDateString(
+                              'pt-BR',
+                            )}
+                            {essay.elapsedSeconds
+                              ? ` · ${Math.floor(essay.elapsedSeconds / 60)} min`
+                              : ''}
+                          </p>
+                        </div>
+                        {essay.aiFeedback && (
+                          <p className="shrink-0 text-lg font-bold text-accent">
+                            {essay.aiFeedback.nota_total}/1000
+                          </p>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </div>
       ) : (
         <>
-          <EssayWorkbench key={essayId} token={token} essayId={essayId} />
+          {error && <Alert>{error}</Alert>}
+          <EssayWorkbench
+            key={essayId}
+            token={token}
+            essayId={essayId}
+            onEvaluated={handleEssayEvaluated}
+          />
           <div className="flex flex-wrap gap-3">
             <Button
               variant="secondary"
@@ -119,6 +214,15 @@ export function RedacaoPage() {
             <Button variant="secondary" onClick={() => setEssayId(null)}>
               Voltar ao histórico
             </Button>
+            {openEssay && isEssayInProgress(openEssay) && (
+              <Button
+                variant="danger"
+                disabled={deletingId === essayId || openEssay.status === 'evaluating'}
+                onClick={() => void handleDeleteEssay(essayId)}
+              >
+                {deletingId === essayId ? 'Excluindo...' : 'Excluir redação'}
+              </Button>
+            )}
             <Link to="/simulados" className="self-center text-sm text-muted hover:text-foreground">
               Ir para simulados
             </Link>

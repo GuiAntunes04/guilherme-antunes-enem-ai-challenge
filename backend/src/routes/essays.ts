@@ -164,6 +164,46 @@ essaysRouter.patch('/:id', async (req, res) => {
   res.json({ essay: mapEssay(data as EssayRow) })
 })
 
+essaysRouter.delete('/:id', async (req, res) => {
+  const userId = req.user!.id
+  const essayId = String(req.params.id)
+
+  const existing = await loadEssayForUser(essayId, userId)
+  if (!existing) {
+    res.status(404).json({ error: 'Essay not found' })
+    return
+  }
+
+  if (existing.source !== 'redacao') {
+    res.status(400).json({
+      error: 'Cannot delete simulation essay',
+      message: 'Redações de simulado não podem ser excluídas por aqui.',
+    })
+    return
+  }
+
+  if (existing.status === 'evaluating') {
+    res.status(400).json({
+      error: 'Essay is being evaluated',
+      message: 'Aguarde a correção terminar ou tente novamente em instantes.',
+    })
+    return
+  }
+
+  const { error } = await supabaseAdmin
+    .from('essays')
+    .delete()
+    .eq('id', essayId)
+    .eq('user_id', userId)
+
+  if (error) {
+    res.status(500).json({ error: 'Failed to delete essay', message: error.message })
+    return
+  }
+
+  res.status(204).send()
+})
+
 essaysRouter.post('/:id/begin', async (req, res) => {
   const userId = req.user!.id
   const essayId = String(req.params.id)
