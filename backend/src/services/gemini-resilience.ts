@@ -31,8 +31,9 @@ export async function withGeminiFallback<T>(
         lastError = err
         const kind = classifyGeminiError(err)
 
-        if (kind === 'overload' && modelIndex < models.length - 1) {
-          console.warn('[gemini] modelo sobrecarregado, tentando fallback', {
+        if ((kind === 'quota' || kind === 'overload') && modelIndex < models.length - 1) {
+          console.warn('[gemini] tentando próximo modelo na mesma chave', {
+            reason: kind,
             model,
             nextModel: models[modelIndex + 1],
             keyIndex: keyIndex + 1,
@@ -40,17 +41,11 @@ export async function withGeminiFallback<T>(
           continue
         }
 
-        if (kind === 'quota' && keyIndex < keys.length - 1) {
-          console.warn('[gemini] limite de quota/rate, trocando chave', {
+        if ((kind === 'quota' || kind === 'overload') && keyIndex < keys.length - 1) {
+          console.warn('[gemini] modelos esgotados nesta chave, trocando chave', {
+            reason: kind,
             keyIndex: keyIndex + 1,
             totalKeys: keys.length,
-          })
-          break
-        }
-
-        if (kind === 'overload' && keyIndex < keys.length - 1) {
-          console.warn('[gemini] modelos esgotados nesta chave, trocando chave', {
-            keyIndex: keyIndex + 1,
           })
           break
         }
