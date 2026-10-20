@@ -7,6 +7,11 @@ import {
   resolveKnowledgeAreaFromSubject,
   type EnemKnowledgeArea,
 } from '../lib/enem-knowledge-areas.js'
+import {
+  buildSubjectAreaPrefixOrFilter,
+  topicPathDepth,
+  topicPathPrefixes,
+} from '../lib/topic-path.js'
 import { ENEM_AREA_ORDER, SUBJECT_PRACTICE_MAX_QUESTIONS } from '../types/simulation.js'
 import { fetchQuestionsByIds, fetchQuestionsList, shuffleAndPick } from './enemhub-api.js'
 
@@ -17,7 +22,7 @@ const CONTENT_BATCH = 100
 const PRACTICE_META_TTL_MS = 5 * 60 * 1000
 
 type PracticeMeta = {
-  areas: { area: string; count: number }[]
+  areas: { area: string; count: number; depth: number }[]
   subjects: PracticeSubjectOption[]
 }
 
@@ -187,7 +192,9 @@ async function scanPracticeMetaFromIndex(): Promise<PracticeMeta> {
       }
       if (row.subject_area) {
         const area = row.subject_area as string
-        areaCounts.set(area, (areaCounts.get(area) ?? 0) + 1)
+        for (const prefix of topicPathPrefixes(area)) {
+          areaCounts.set(prefix, (areaCounts.get(prefix) ?? 0) + 1)
+        }
       }
     }
 
@@ -207,7 +214,7 @@ async function scanPracticeMetaFromIndex(): Promise<PracticeMeta> {
         return a.name.localeCompare(b.name)
       }),
     areas: [...areaCounts.entries()]
-      .map(([area, count]) => ({ area, count }))
+      .map(([area, count]) => ({ area, count, depth: topicPathDepth(area) }))
       .sort((a, b) => a.area.localeCompare(b.area)),
   }
 }
@@ -330,6 +337,7 @@ async function queryIndexEntries(
     year?: number
     years?: number[]
     subjectArea?: string
+    subjectAreaPrefix?: boolean
     subjectId?: string
     subjectNames?: string[]
   },
@@ -353,7 +361,11 @@ async function queryIndexEntries(
     }
 
     if (filters.subjectArea) {
-      query = query.eq('subject_area', filters.subjectArea)
+      if (filters.subjectAreaPrefix) {
+        query = query.or(buildSubjectAreaPrefixOrFilter(filters.subjectArea))
+      } else {
+        query = query.eq('subject_area', filters.subjectArea)
+      }
     }
 
     if (filters.subjectId) {
@@ -413,7 +425,7 @@ export async function pickQuestionIdsBySubjectArea(
   subjectArea: string,
   count: number | null,
 ): Promise<{ ids: string[]; yearsUsed: number[] }> {
-  const entries = await queryIndexEntries({ subjectArea })
+  const entries = await queryIndexEntries({ subjectArea, subjectAreaPrefix: true })
 
   if (entries.length === 0) {
     return { ids: [], yearsUsed: [] }

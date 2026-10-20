@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { EssaySimulationPage } from './simulados/EssaySimulationPage'
 import { SimuladosHome } from './simulados/SimuladosHome'
+import { TopicExplorerPage } from './simulados/TopicExplorerPage'
 import { SimulationQuizPage } from './simulados/SimulationQuizPage'
 import { SimulationResultPage } from './simulados/SimulationResultPage'
 
@@ -8,6 +9,7 @@ export function SimuladosPage() {
   return (
     <Routes>
       <Route index element={<SimuladosHome />} />
+      <Route path="topicos" element={<TopicExplorerPage />} />
       <Route path=":attemptId/resultado" element={<SimulationResultPage />} />
       <Route path=":attemptId/redacao" element={<EssaySimulationPage />} />
       <Route path=":attemptId" element={<SimulationQuizPage />} />

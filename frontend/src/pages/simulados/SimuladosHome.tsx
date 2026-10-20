@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { TopicCascadeSelects } from '../../components/simulation/TopicCascadeSelects'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -49,6 +50,7 @@ function defaultTimerForMode(mode: SimulationMode): number | null {
 
 export function SimuladosHome() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { session } = useAuth()
   const token = session?.access_token ?? ''
 
@@ -121,26 +123,43 @@ export function SimuladosHome() {
     if (!token || !isSubjectPractice) return
 
     setLoadingMeta(true)
-    setSubjectArea('')
-    setSubjectName('')
+
+    const topicFromUrl = searchParams.get('topico')?.trim() ?? ''
+    const practiceFromUrl = searchParams.get('pratica')
 
     fetchEnemPracticeMeta(token)
       .then(({ subjects: subjectsData, areas: areasData }) => {
         setPracticeSubjects(subjectsData)
         setSubjectAreas(areasData)
 
-        if (subjectsData.length > 0) {
-          setSubjectName(subjectsData[0].name)
-          setQuestionCount(defaultQuestionSelection(subjectsData[0].count))
+        if (practiceFromUrl === 'topic') {
+          setPracticeFilter('topic')
         }
 
-        if (areasData.length > 0) {
-          setSubjectArea(areasData[0].area)
+        const matchedTopic = areasData.find((item) => item.area === topicFromUrl)
+
+        if (subjectsData.length > 0) {
+          setSubjectName(subjectsData[0].name)
+          if (practiceFromUrl !== 'topic') {
+            setQuestionCount(defaultQuestionSelection(subjectsData[0].count))
+          }
+        }
+
+        if (matchedTopic) {
+          setSubjectArea(matchedTopic.area)
+          setQuestionCount(defaultQuestionSelection(matchedTopic.count))
+        } else if (areasData.length > 0 && practiceFromUrl === 'topic') {
+          const firstRoot = areasData.find((item) => item.depth === 0) ?? areasData[0]
+          setSubjectArea(firstRoot.area)
+          setQuestionCount(defaultQuestionSelection(firstRoot.count))
+        } else if (areasData.length > 0) {
+          const firstRoot = areasData.find((item) => item.depth === 0) ?? areasData[0]
+          setSubjectArea(firstRoot.area)
         }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao carregar opções'))
       .finally(() => setLoadingMeta(false))
-  }, [token, isSubjectPractice])
+  }, [token, isSubjectPractice, searchParams])
 
   useEffect(() => {
     setTimeLimitSeconds(defaultTimerForMode(mode))
@@ -324,11 +343,9 @@ export function SimuladosHome() {
                   </select>
                 </label>
 
-                <label className="block sm:col-span-2">
-                  <span className="mb-1.5 block text-sm text-muted-foreground">
-                    {practiceFilter === 'subject' ? 'Matéria' : 'Tópico'}
-                  </span>
-                  {practiceFilter === 'subject' ? (
+                {practiceFilter === 'subject' ? (
+                  <label className="block sm:col-span-2">
+                    <span className="mb-1.5 block text-sm text-muted-foreground">Matéria</span>
                     <select
                       value={subjectName}
                       onChange={(e) => handleSubjectNameChange(e.target.value)}
@@ -349,25 +366,30 @@ export function SimuladosHome() {
                         ))
                       )}
                     </select>
-                  ) : (
-                    <select
+                  </label>
+                ) : (
+                  <div className="space-y-3 sm:col-span-2 lg:col-span-3">
+                    <TopicCascadeSelects
+                      areas={subjectAreas}
                       value={subjectArea}
-                      onChange={(e) => handleSubjectAreaChange(e.target.value)}
+                      onChange={handleSubjectAreaChange}
                       disabled={loadingMeta || subjectAreas.length === 0}
-                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
-                    >
-                      {loadingMeta ? (
-                        <option value="">Carregando...</option>
-                      ) : (
-                        subjectAreas.map((item) => (
-                          <option key={item.area} value={item.area}>
-                            {item.area} ({item.count})
-                          </option>
-                        ))
+                    />
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                      <Link
+                        to="/simulados/topicos"
+                        className="font-medium text-accent hover:underline"
+                      >
+                        Explorar tópicos visualmente
+                      </Link>
+                      {selectedSubjectArea && (
+                        <span className="text-muted">
+                          {selectedSubjectArea.count} questões (inclui subtópicos)
+                        </span>
                       )}
-                    </select>
-                  )}
-                </label>
+                    </div>
+                  </div>
+                )}
 
                 {practiceFilter === 'subject' && (
                   <p className="text-sm text-muted sm:col-span-3">

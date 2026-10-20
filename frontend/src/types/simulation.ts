@@ -48,6 +48,7 @@ export const SUBJECT_PRACTICE_QUESTION_PRESETS = [5, 10, 15, 20, 30, 45] as cons
 export type EnemSubjectArea = {
   area: string
   count: number
+  depth?: number
 }
 
 export type EnemPracticeSubject = {
