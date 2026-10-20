@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { simulationStartRateLimiter } from '../middleware/rate-limit.js'
 import { cacheQuestions, sanitizeQuestion } from '../services/enemhub-api.js'
 import {
   QuestionIndexNotSyncedError,
@@ -346,7 +347,7 @@ simulationsRouter.get('/:id', async (req, res) => {
 
 
 
-simulationsRouter.post('/start', async (req, res) => {
+simulationsRouter.post('/start', simulationStartRateLimiter, async (req, res) => {
 
   const userId = req.user!.id
 

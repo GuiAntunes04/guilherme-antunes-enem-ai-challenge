@@ -279,7 +279,7 @@ export function SimuladosHome() {
       <PageHeader
         eyebrow="Simulados"
         title="Pratique com questões reais do ENEM"
-        description="Questões oficiais via EnemHub — pratique por matéria ou tópico, ou simule o 1º ou 2º dia completo com questões aleatórias de vários anos."
+        description="Pratique por matéria ou tópico, ou simule o 1º ou 2º dia completo com questões aleatórias de vários anos."
       />
 
       <section className="rounded-[var(--radius-card)] border border-border-subtle bg-surface-raised/90 p-6">

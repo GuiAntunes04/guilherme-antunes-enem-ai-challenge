@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { supabaseAdmin } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { geminiRateLimiter } from '../middleware/rate-limit.js'
 import { extractTextFromUpload } from '../services/essay-import.js'
 import { computeEssayElapsedSeconds, mapEssay } from '../services/essay-mapper.js'
 import { evaluateEssay, generateEssayTheme } from '../services/gemini.js'
@@ -77,7 +78,7 @@ async function finalizeLinkedSimulationAttempt(
     .is('finished_at', null)
 }
 
-essaysRouter.post('/start', async (req, res) => {
+essaysRouter.post('/start', geminiRateLimiter, async (req, res) => {
   const userId = req.user!.id
   const source = (req.body.source as EssaySource | undefined) ?? 'redacao'
   const timeLimitRaw = req.body.timeLimitSeconds
@@ -253,7 +254,7 @@ essaysRouter.post('/:id/begin', async (req, res) => {
   res.json({ essay: mapEssay(raced) })
 })
 
-essaysRouter.post('/:id/import', upload.single('file'), async (req, res) => {
+essaysRouter.post('/:id/import', geminiRateLimiter, upload.single('file'), async (req, res) => {
   const userId = req.user!.id
   const essayId = String(req.params.id)
   const file = req.file
@@ -290,7 +291,7 @@ essaysRouter.post('/:id/import', upload.single('file'), async (req, res) => {
   }
 })
 
-essaysRouter.post('/:id/evaluate', async (req, res) => {
+essaysRouter.post('/:id/evaluate', geminiRateLimiter, async (req, res) => {
   const userId = req.user!.id
   const essayId = String(req.params.id)
   const content = String(req.body.content ?? '').trim()

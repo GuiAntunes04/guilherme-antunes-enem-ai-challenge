@@ -41,4 +41,28 @@
     background: color-mix(in srgb, var(--color-accent) 35%, transparent);
     color: var(--color-foreground);
   }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) var(--color-surface-overlay);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface-overlay);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
+    border: 2px solid var(--color-surface-overlay);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  }
 }

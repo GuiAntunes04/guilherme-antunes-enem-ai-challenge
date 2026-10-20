@@ -234,6 +234,30 @@ export function invalidatePracticeMetaCache(): void {
   practiceMetaCache = null
 }
 
+export async function assertKnownPracticeSubjectArea(subjectArea: string): Promise<void> {
+  const trimmed = subjectArea.trim()
+  if (!trimmed) {
+    throw new Error('subjectArea is required')
+  }
+
+  const meta = await getPracticeMetaFromIndex()
+  if (!meta.areas.some((item) => item.area === trimmed)) {
+    throw new Error('Tópico inválido ou desatualizado. Escolha um tópico da lista.')
+  }
+}
+
+export async function assertKnownPracticeSubjectName(subjectName: string): Promise<void> {
+  const trimmed = subjectName.trim()
+  if (!trimmed) {
+    throw new Error('subjectName is required')
+  }
+
+  const meta = await getPracticeMetaFromIndex()
+  if (!meta.subjects.some((item) => item.name === trimmed)) {
+    throw new Error('Matéria inválida ou desatualizada. Escolha uma matéria da lista.')
+  }
+}
+
 export async function fetchQuestionsFromIndex(
   questionIds: string[],
 ): Promise<Map<string, EnemHubQuestion>> {

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { geminiRateLimiter } from '../middleware/rate-limit.js'
 import { generateTutorReply, type TutorChatMessage } from '../services/gemini.js'
 import { buildQuestionContextFromId } from '../services/tutor-context.js'
 import {
@@ -295,9 +296,9 @@ tutorRouter.get('/sessions/:id/messages', async (req, res) => {
   }
 })
 
-tutorRouter.post('/sessions/:id/messages', async (req, res) => {
+tutorRouter.post('/sessions/:id/messages', geminiRateLimiter, async (req, res) => {
   const userId = req.user!.id
-  const sessionId = req.params.id
+  const sessionId = String(req.params.id)
   const content = String(req.body.content ?? '').trim()
 
   if (!content) {

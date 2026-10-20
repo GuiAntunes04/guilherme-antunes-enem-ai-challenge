@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
+import { requireQuestionIndexSyncSecret } from '../middleware/sync-secret.js'
 import {
   getIndexCount,
   getPracticeMetaFromIndex,
@@ -23,7 +24,7 @@ enemRouter.get('/index-status', async (_req, res) => {
   }
 })
 
-enemRouter.post('/sync', async (_req, res) => {
+enemRouter.post('/sync', requireQuestionIndexSyncSecret, async (_req, res) => {
   try {
     const result = await syncQuestionIndex()
     res.json({

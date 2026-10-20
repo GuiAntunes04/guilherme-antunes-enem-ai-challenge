@@ -168,7 +168,7 @@ npm run sync:questions
 
 Indexa ~4.800 questões com metadados, gabarito e conteúdo completo. Consome ~50 requisições à EnemHub (listagem paginada, 100 por página).
 
-Alternativa via API autenticada: `POST /api/enem/sync`
+Alternativa via API (requer JWT + `QUESTION_INDEX_SYNC_SECRET` no header `X-Question-Index-Sync-Secret`): `POST /api/enem/sync`. Sem o secret configurado no servidor, use apenas o CLI.
 
 > Reexecute o sync após atualizar migrations que alterem `enem_questions_index`.
 

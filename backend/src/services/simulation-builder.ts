@@ -7,6 +7,8 @@ import { generateEssayTheme } from './gemini.js'
 import { sortLikeEnem } from './enemhub-api.js'
 import { resolveQuestionsByIds } from './question-index.js'
 import {
+  assertKnownPracticeSubjectArea,
+  assertKnownPracticeSubjectName,
   pickQuestionIdsBySubjectArea,
   pickQuestionIdsBySubjectName,
   pickQuestionIdsForDaySimulation,
@@ -59,6 +61,12 @@ export async function planSimulation(
 
       if (questionCount !== null && (questionCount < 1 || !Number.isFinite(questionCount))) {
         throw new Error('questionCount must be at least 1 or omitted for all questions')
+      }
+
+      if (subjectName) {
+        await assertKnownPracticeSubjectName(subjectName)
+      } else {
+        await assertKnownPracticeSubjectArea(subjectArea)
       }
 
       const { ids, yearsUsed } = subjectName

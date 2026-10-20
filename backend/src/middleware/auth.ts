@@ -30,6 +30,7 @@ export async function requireAuth(
   try {
     const { payload } = await jwtVerify(token, getJWKS(), {
       issuer: `${env.supabaseUrl}/auth/v1`,
+      audience: 'authenticated',
     })
 
     if (!payload.sub) {

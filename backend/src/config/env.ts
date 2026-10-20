@@ -40,6 +40,8 @@ export const env = {
   geminiModels,
   enemhubApiKey: enemhubApiKeys[0],
   enemhubApiKeys,
+  /** When set, POST /api/enem/sync requires header X-Question-Index-Sync-Secret. */
+  questionIndexSyncSecret: process.env.QUESTION_INDEX_SYNC_SECRET?.trim() || undefined,
 }
 
 export function validateProductionEnv(): void {
