@@ -3,12 +3,16 @@ import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { QuestionIndexContent, QuestionIndexEntry } from '../types/question-index.js'
 import {
   getKnowledgeAreasForDay,
+  getLinguagensQuotasForDayOne,
   getSubjectQuotasForArea,
+  LINGUAGENS_SUBJECT_ORDER,
   resolveKnowledgeAreaFromSubject,
+  type EnemForeignLanguage,
   type EnemKnowledgeArea,
 } from '../lib/enem-knowledge-areas.js'
 import {
   buildSubjectAreaPrefixOrFilter,
+  normalizeSubjectAreaForTopics,
   topicPathDepth,
   topicPathPrefixes,
 } from '../lib/topic-path.js'
@@ -50,7 +54,10 @@ function toIndexRow(question: EnemHubQuestion) {
     year: question.year,
     subject_id: question.subject?.id ?? null,
     subject_name: question.subject?.name ?? null,
-    subject_area: question.subject?.area ?? null,
+    subject_area: normalizeSubjectAreaForTopics(
+      question.subject?.name ?? null,
+      question.subject?.area ?? null,
+    ),
     difficulty: question.difficulty,
     correct_alternative: question.correctAlternative,
     content: toQuestionContent(question),
@@ -432,6 +439,50 @@ export function sortIndexLikeEnem(entries: QuestionIndexEntry[]): QuestionIndexE
   })
 }
 
+function sortEntriesBySubjectOrder(
+  entries: QuestionIndexEntry[],
+  subjectOrder: readonly string[],
+): QuestionIndexEntry[] {
+  return [...entries].sort((a, b) => {
+    const ai = subjectOrder.indexOf(a.subject_name ?? '')
+    const bi = subjectOrder.indexOf(b.subject_name ?? '')
+    const aIdx = ai === -1 ? subjectOrder.length : ai
+    const bIdx = bi === -1 ? subjectOrder.length : bi
+    if (aIdx !== bIdx) return aIdx - bIdx
+    return a.year - b.year
+  })
+}
+
+/** ENEM day one: 5 LE questions first, then remaining linguagens, then humanas. */
+export function orderDayOneEntries(
+  entries: QuestionIndexEntry[],
+  foreignLanguage: EnemForeignLanguage,
+): QuestionIndexEntry[] {
+  const otherLanguage: EnemForeignLanguage =
+    foreignLanguage === 'Inglês' ? 'Espanhol' : 'Inglês'
+  const linguagensArea: EnemKnowledgeArea = 'Linguagens, Códigos e suas Tecnologias'
+  const humanasArea: EnemKnowledgeArea = 'Ciências Humanas e suas Tecnologias'
+
+  const foreignLanguageEntries = entries.filter((entry) => entry.subject_name === foreignLanguage)
+  const linguagensRest = entries.filter((entry) => {
+    if (entry.subject_name === foreignLanguage || entry.subject_name === otherLanguage) {
+      return false
+    }
+    return resolveKnowledgeAreaFromSubject(entry.subject_name) === linguagensArea
+  })
+  const humanasEntries = entries.filter(
+    (entry) => resolveKnowledgeAreaFromSubject(entry.subject_name) === humanasArea,
+  )
+
+  const humanasOrder = Object.keys(getSubjectQuotasForArea(humanasArea))
+
+  return [
+    ...foreignLanguageEntries,
+    ...sortEntriesBySubjectOrder(linguagensRest, LINGUAGENS_SUBJECT_ORDER),
+    ...sortEntriesBySubjectOrder(humanasEntries, humanasOrder),
+  ]
+}
+
 function resolveSubjectPracticeLimit(
   requested: number | null,
   available: number,
@@ -541,21 +592,33 @@ async function loadSubjectPoolsForArea(
   return pools
 }
 
+type DaySimulationPickOptions = {
+  foreignLanguage?: EnemForeignLanguage
+}
+
 async function pickDaySimulationEntries(
   mode: 'day_one' | 'day_two',
+  options: DaySimulationPickOptions = {},
 ): Promise<{ entries: QuestionIndexEntry[]; missingSubjects: string[] }> {
   const areas = getKnowledgeAreasForDay(mode)
   const picked: QuestionIndexEntry[] = []
   const missingSubjects: string[] = []
 
   for (const area of areas) {
-    const quotas = getSubjectQuotasForArea(area)
+    const quotas =
+      mode === 'day_one' &&
+      area === 'Linguagens, Códigos e suas Tecnologias' &&
+      options.foreignLanguage
+        ? getLinguagensQuotasForDayOne(options.foreignLanguage)
+        : getSubjectQuotasForArea(area)
     const areaTarget = Object.values(quotas).reduce((sum, quota) => sum + quota, 0)
     const pools = await loadSubjectPoolsForArea(area)
     const areaPicked: QuestionIndexEntry[] = []
     const remaining: QuestionIndexEntry[] = []
 
     for (const [subjectName, quota] of Object.entries(quotas)) {
+      if (quota <= 0) continue
+
       const available = pools.get(subjectName) ?? []
       const selected = shuffleAndPick(available, Math.min(quota, available.length))
       areaPicked.push(...selected)
@@ -579,17 +642,23 @@ async function pickDaySimulationEntries(
     picked.push(...areaPicked)
   }
 
-  return { entries: sortIndexLikeEnem(picked), missingSubjects }
+  const entries =
+    mode === 'day_one' && options.foreignLanguage
+      ? orderDayOneEntries(picked, options.foreignLanguage)
+      : sortIndexLikeEnem(picked)
+
+  return { entries, missingSubjects }
 }
 
 export async function pickQuestionIdsForDaySimulation(
   mode: 'day_one' | 'day_two',
   userId: string,
+  options: DaySimulationPickOptions = {},
 ): Promise<{ ids: string[]; yearsUsed: number[]; missingSubjects: string[] }> {
   const usedSignatures = await getUserDaySimulationSignatures(userId, mode)
 
   for (let attempt = 0; attempt < DAY_SIMULATION_MAX_RETRIES; attempt += 1) {
-    const { entries, missingSubjects } = await pickDaySimulationEntries(mode)
+    const { entries, missingSubjects } = await pickDaySimulationEntries(mode, options)
     const ids = entries.map((entry) => entry.id)
 
     if (ids.length === 0) {

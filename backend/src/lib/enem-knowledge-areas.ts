@@ -50,6 +50,10 @@ export function getKnowledgeAreasForDay(mode: 'day_one' | 'day_two'): EnemKnowle
  * EnemHub may omit some disciplines (e.g. Educação Física); shortfalls are filled from
  * other subjects in the same area during day simulation assembly.
  */
+export type EnemForeignLanguage = 'Inglês' | 'Espanhol'
+
+export const ENEM_FOREIGN_LANGUAGE_QUOTA = 5
+
 export const ENEM_SUBJECT_QUOTAS: Record<EnemKnowledgeArea, Record<string, number>> = {
   'Linguagens, Códigos e suas Tecnologias': {
     Português: 27,
@@ -78,6 +82,34 @@ export const ENEM_SUBJECT_QUOTAS: Record<EnemKnowledgeArea, Record<string, numbe
 export function getSubjectQuotasForArea(area: EnemKnowledgeArea): Record<string, number> {
   return { ...ENEM_SUBJECT_QUOTAS[area] }
 }
+
+/** Day-one linguagens: one LE block (5) at the start; the other language is omitted. */
+export function getLinguagensQuotasForDayOne(
+  foreignLanguage: EnemForeignLanguage,
+): Record<string, number> {
+  const otherLanguage: EnemForeignLanguage =
+    foreignLanguage === 'Inglês' ? 'Espanhol' : 'Inglês'
+
+  return {
+    [foreignLanguage]: ENEM_FOREIGN_LANGUAGE_QUOTA,
+    [otherLanguage]: 0,
+    Português: 30,
+    Literatura: 6,
+    Artes: 2,
+    'Educação Física': 2,
+  }
+}
+
+export function isEnemForeignLanguage(value: string): value is EnemForeignLanguage {
+  return value === 'Inglês' || value === 'Espanhol'
+}
+
+export const LINGUAGENS_SUBJECT_ORDER = [
+  'Português',
+  'Literatura',
+  'Artes',
+  'Educação Física',
+] as const
 
 export function getDaySimulationQuestionTarget(mode: 'day_one' | 'day_two'): number {
   return getKnowledgeAreasForDay(mode).reduce((total, area) => {

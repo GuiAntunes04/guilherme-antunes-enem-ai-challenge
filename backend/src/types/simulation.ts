@@ -36,12 +36,16 @@ export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const TIME_DAY_SECONDS = 270 * 60
 export const TIME_ESSAY_SECONDS = 90 * 60
 
+export type EnemForeignLanguage = 'Inglês' | 'Espanhol'
+
 export type StartSimulationBody = {
   mode: SimulationMode
   /** subject_area topic path from enem_questions_index (subject practice only) */
   subjectArea?: string
   /** ENEM discipline name, e.g. Matemática, História (subject practice only) */
   subjectName?: string
+  /** Required for day_one: 5 opening questions from this language */
+  foreignLanguage?: EnemForeignLanguage
   /** Omit or null = all questions for the subject area */
   questionCount?: number | null
   /** null or 0 = unlimited */

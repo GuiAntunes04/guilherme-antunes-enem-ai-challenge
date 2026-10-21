@@ -1,4 +1,7 @@
-import { getDaySimulationQuestionTarget } from '../lib/enem-knowledge-areas.js'
+import {
+  getDaySimulationQuestionTarget,
+  isEnemForeignLanguage,
+} from '../lib/enem-knowledge-areas.js'
 import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { EssayTheme } from '../types/essay.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
@@ -91,7 +94,44 @@ export async function planSimulation(
       }
     }
 
-    case 'day_one':
+    case 'day_one': {
+      if (!options.userId) {
+        throw new Error('userId is required for day simulations')
+      }
+
+      const foreignLanguage = body.foreignLanguage
+      if (!foreignLanguage || !isEnemForeignLanguage(foreignLanguage)) {
+        throw new Error('Escolha Inglês ou Espanhol para o 1º dia do ENEM')
+      }
+
+      const { ids, yearsUsed, missingSubjects } = await pickQuestionIdsForDaySimulation(
+        mode,
+        options.userId,
+        { foreignLanguage },
+      )
+
+      const questionTarget = getDaySimulationQuestionTarget(mode)
+
+      if (ids.length === 0) {
+        throw new Error('Nenhuma questão encontrada para este dia de prova')
+      }
+
+      if (missingSubjects.length > 0 || ids.length < questionTarget) {
+        throw new Error(
+          `Questões insuficientes para um simulado completo (${ids.length}/${questionTarget}): ${missingSubjects.join(', ')}`,
+        )
+      }
+
+      return {
+        questionIds: ids,
+        examYear: null,
+        yearsUsed,
+        discipline: `1º dia ENEM · ${foreignLanguage}`,
+        subjectId: null,
+        timeLimitSeconds: resolveTimeLimitSeconds(body),
+      }
+    }
+
     case 'day_two': {
       if (!options.userId) {
         throw new Error('userId is required for day simulations')
@@ -118,7 +158,7 @@ export async function planSimulation(
         questionIds: ids,
         examYear: null,
         yearsUsed,
-        discipline: mode === 'day_one' ? '1º dia ENEM' : '2º dia ENEM',
+        discipline: '2º dia ENEM',
         subjectId: null,
         timeLimitSeconds: resolveTimeLimitSeconds(body),
       }
@@ -155,7 +195,7 @@ export async function loadSimulationQuestions(
     return question ? [question] : []
   })
 
-  if (mode === 'day_one' || mode === 'day_two') {
+  if (mode === 'day_two') {
     return sortLikeEnem(ordered)
   }
 

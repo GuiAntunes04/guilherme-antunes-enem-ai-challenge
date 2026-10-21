@@ -1,5 +1,33 @@
 export const TOPIC_PATH_SEPARATOR = ' > '
 
+const FOREIGN_LANGUAGE_TOPIC_ROOTS = new Set(['Inglês', 'Espanhol'])
+
+/**
+ * EnemHub uses subject.name for discipline (Inglês/Espanhol) and subject.area for skill paths
+ * that often omit the language. Prefix area so topic practice and meta include language roots.
+ */
+export function normalizeSubjectAreaForTopics(
+  subjectName: string | null | undefined,
+  subjectArea: string | null | undefined,
+): string | null {
+  const name = subjectName?.trim()
+  if (!name || !FOREIGN_LANGUAGE_TOPIC_ROOTS.has(name)) {
+    const trimmed = subjectArea?.trim()
+    return trimmed || null
+  }
+
+  const area = subjectArea?.trim() ?? ''
+  if (!area) {
+    return name
+  }
+
+  if (area === name || area.startsWith(`${name}${TOPIC_PATH_SEPARATOR}`)) {
+    return area
+  }
+
+  return `${name}${TOPIC_PATH_SEPARATOR}${area}`
+}
+
 export function topicPathPrefixes(fullPath: string): string[] {
   const parts = fullPath
     .split(TOPIC_PATH_SEPARATOR)

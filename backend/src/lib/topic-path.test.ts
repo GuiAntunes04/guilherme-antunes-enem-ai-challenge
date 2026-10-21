@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   buildSubjectAreaPrefixOrFilter,
   matchesTopicPathPrefix,
+  normalizeSubjectAreaForTopics,
   topicPathDepth,
   topicPathPrefixes,
   TOPIC_PATH_SEPARATOR,
@@ -37,4 +38,23 @@ test('buildSubjectAreaPrefixOrFilter quotes values with spaces', () => {
   const filter = buildSubjectAreaPrefixOrFilter('História Geral')
   assert.match(filter, /subject_area\.eq\."História Geral"/)
   assert.match(filter, /subject_area\.like\."História Geral > %"/)
+})
+
+test('normalizeSubjectAreaForTopics prefixes foreign language paths', () => {
+  assert.equal(normalizeSubjectAreaForTopics('Inglês', null), 'Inglês')
+  assert.equal(normalizeSubjectAreaForTopics('Inglês', '  '), 'Inglês')
+  assert.equal(
+    normalizeSubjectAreaForTopics('Inglês', 'Interpretação de texto'),
+    `Inglês${TOPIC_PATH_SEPARATOR}Interpretação de texto`,
+  )
+  assert.equal(
+    normalizeSubjectAreaForTopics('Inglês', `Inglês${TOPIC_PATH_SEPARATOR}Vocabulário`),
+    `Inglês${TOPIC_PATH_SEPARATOR}Vocabulário`,
+  )
+  assert.equal(normalizeSubjectAreaForTopics('Espanhol', 'Gramática'), `Espanhol${TOPIC_PATH_SEPARATOR}Gramática`)
+})
+
+test('normalizeSubjectAreaForTopics leaves other subjects unchanged', () => {
+  assert.equal(normalizeSubjectAreaForTopics('Português', 'Gramática'), 'Gramática')
+  assert.equal(normalizeSubjectAreaForTopics('Matemática', null), null)
 })

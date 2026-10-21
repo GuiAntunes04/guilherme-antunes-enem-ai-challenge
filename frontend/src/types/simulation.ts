@@ -2,6 +2,13 @@ import type { Essay } from './essay'
 
 export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two' | 'essay'
 
+export type EnemForeignLanguage = 'Inglês' | 'Espanhol'
+
+export const ENEM_FOREIGN_LANGUAGE_OPTIONS: { value: EnemForeignLanguage; label: string }[] = [
+  { value: 'Inglês', label: 'Inglês' },
+  { value: 'Espanhol', label: 'Espanhol' },
+]
+
 export const TIME_DAY_SECONDS = 270 * 60
 export const TIME_ESSAY_SECONDS = 90 * 60
 
@@ -104,6 +111,7 @@ export type StartSimulationPayload = {
   mode: SimulationMode
   subjectArea?: string
   subjectName?: string
+  foreignLanguage?: EnemForeignLanguage
   questionCount?: number | null
   timeLimitSeconds?: number | null
 }

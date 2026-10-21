@@ -17,12 +17,14 @@ import type {
   SubjectPracticeFilter,
 } from '../../types/simulation'
 import {
+  ENEM_FOREIGN_LANGUAGE_OPTIONS,
   SIMULATION_MODES,
   SIMULATION_TIMER_OPTIONS,
   SUBJECT_PRACTICE_MAX_QUESTIONS,
   SUBJECT_PRACTICE_QUESTION_PRESETS,
   TIME_DAY_SECONDS,
   TIME_ESSAY_SECONDS,
+  type EnemForeignLanguage,
 } from '../../types/simulation'
 
 function loadableQuestionCount(available: number): number {
@@ -64,6 +66,7 @@ export function SimuladosHome() {
   const [subjectName, setSubjectName] = useState('')
   const [questionCount, setQuestionCount] = useState<number | 'all'>(10)
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null)
+  const [foreignLanguage, setForeignLanguage] = useState<EnemForeignLanguage>('Inglês')
   const [loading, setLoading] = useState(true)
   const [loadingMeta, setLoadingMeta] = useState(false)
   const [starting, setStarting] = useState(false)
@@ -243,10 +246,16 @@ export function SimuladosHome() {
             questionCount: questionCount === 'all' ? null : questionCount,
             timeLimitSeconds,
           }
-        : {
-            mode,
-            timeLimitSeconds,
-          }
+        : mode === 'day_one'
+          ? {
+              mode,
+              foreignLanguage,
+              timeLimitSeconds,
+            }
+          : {
+              mode,
+              timeLimitSeconds,
+            }
 
       const { attempt } = await startSimulation(token, payload)
       const destination =
@@ -311,7 +320,28 @@ export function SimuladosHome() {
             <p className="text-sm text-muted">{selectedMode.description}</p>
           )}
 
-          {isDaySimulation && (
+          {mode === 'day_one' && (
+            <>
+              <label className="block">
+                <span className="mb-1.5 block text-sm text-muted-foreground">
+                  Língua estrangeira
+                </span>
+                <select
+                  value={foreignLanguage}
+                  onChange={(e) => setForeignLanguage(e.target.value as EnemForeignLanguage)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
+                >
+                  {ENEM_FOREIGN_LANGUAGE_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
+
+          {mode === 'day_two' && (
             <p className="text-sm text-muted">
               90 questões distribuídas por disciplina (padrão ENEM), sorteadas entre todos os
               anos disponíveis. Cada simulado é único em relação aos seus anteriores.
