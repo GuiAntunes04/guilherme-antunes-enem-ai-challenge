@@ -4,6 +4,10 @@ export type SimulationMode = 'subject_practice' | 'day_one' | 'day_two' | 'essay
 
 export type EnemForeignLanguage = 'Inglês' | 'Espanhol'
 
+export const ENEM_DIFFICULTY_ORDER = ['Fácil', 'Média', 'Difícil'] as const
+
+export type EnemDifficulty = (typeof ENEM_DIFFICULTY_ORDER)[number]
+
 export const ENEM_FOREIGN_LANGUAGE_OPTIONS: { value: EnemForeignLanguage; label: string }[] = [
   { value: 'Inglês', label: 'Inglês' },
   { value: 'Espanhol', label: 'Espanhol' },
@@ -118,6 +122,12 @@ export type StartSimulationPayload = {
   foreignLanguage?: EnemForeignLanguage
   questionCount?: number | null
   timeLimitSeconds?: number | null
+  difficulties?: EnemDifficulty[]
+}
+
+export type EnemPracticeFilterStats = {
+  byDifficulty: Record<EnemDifficulty, number>
+  total: number
 }
 
 export type StartSimulationResponse = {

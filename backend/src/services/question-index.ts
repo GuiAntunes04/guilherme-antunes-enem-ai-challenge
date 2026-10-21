@@ -16,6 +16,12 @@ import {
   topicPathDepth,
   topicPathPrefixes,
 } from '../lib/topic-path.js'
+import {
+  buildDifficultyOrFilter,
+  emptyDifficultyCounts,
+  normalizeIndexDifficulty,
+  type EnemDifficulty,
+} from '../lib/enem-difficulty.js'
 import { ENEM_AREA_ORDER, SUBJECT_PRACTICE_MAX_QUESTIONS } from '../types/simulation.js'
 import { fetchQuestionsByIds, fetchQuestionsList, shuffleAndPick } from './enemhub-api.js'
 
@@ -367,6 +373,7 @@ async function queryIndexEntries(
     subjectAreaPrefix?: boolean
     subjectId?: string
     subjectNames?: string[]
+    difficulties?: EnemDifficulty[]
   },
 ): Promise<QuestionIndexEntry[]> {
   await ensureIndexSynced()
@@ -401,6 +408,10 @@ async function queryIndexEntries(
 
     if (filters.subjectNames?.length) {
       query = query.in('subject_name', filters.subjectNames)
+    }
+
+    if (filters.difficulties?.length) {
+      query = query.or(buildDifficultyOrFilter(filters.difficulties))
     }
 
     const { data, error } = await query
@@ -492,11 +503,45 @@ function resolveSubjectPracticeLimit(
   return Math.min(requested, cappedAvailable)
 }
 
+export async function getPracticeDifficultyCounts(filters: {
+  subjectName?: string
+  subjectArea?: string
+}): Promise<{ byDifficulty: Record<EnemDifficulty, number>; total: number }> {
+  const subjectName = filters.subjectName?.trim()
+  const subjectArea = filters.subjectArea?.trim()
+
+  if (subjectName && subjectArea) {
+    throw new Error('Informe subjectName ou subjectArea, não ambos')
+  }
+
+  if (!subjectName && !subjectArea) {
+    throw new Error('subjectName or subjectArea is required')
+  }
+
+  const entries = subjectName
+    ? await queryIndexEntries({ subjectNames: [subjectName] })
+    : await queryIndexEntries({ subjectArea: subjectArea!, subjectAreaPrefix: true })
+
+  const byDifficulty = emptyDifficultyCounts()
+
+  for (const entry of entries) {
+    const difficulty = normalizeIndexDifficulty(entry.difficulty)
+    byDifficulty[difficulty]++
+  }
+
+  return { byDifficulty, total: entries.length }
+}
+
 export async function pickQuestionIdsBySubjectArea(
   subjectArea: string,
   count: number | null,
+  difficulties?: EnemDifficulty[],
 ): Promise<{ ids: string[]; yearsUsed: number[] }> {
-  const entries = await queryIndexEntries({ subjectArea, subjectAreaPrefix: true })
+  const entries = await queryIndexEntries({
+    subjectArea,
+    subjectAreaPrefix: true,
+    difficulties,
+  })
 
   if (entries.length === 0) {
     return { ids: [], yearsUsed: [] }
@@ -516,8 +561,9 @@ export async function pickQuestionIdsBySubjectArea(
 export async function pickQuestionIdsBySubjectName(
   subjectName: string,
   count: number | null,
+  difficulties?: EnemDifficulty[],
 ): Promise<{ ids: string[]; yearsUsed: number[] }> {
-  const entries = await queryIndexEntries({ subjectNames: [subjectName] })
+  const entries = await queryIndexEntries({ subjectNames: [subjectName], difficulties })
 
   if (entries.length === 0) {
     return { ids: [], yearsUsed: [] }

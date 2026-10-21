@@ -1,5 +1,6 @@
 import type {
   BeginSimulationResponse,
+  EnemPracticeFilterStats,
   EnemPracticeSubject,
   EnemSubjectArea,
   SimulationDetailResponse,
@@ -90,6 +91,24 @@ export async function fetchEnemPracticeMeta(token: string): Promise<EnemPractice
   }
 
   return response.json() as Promise<EnemPracticeMeta>
+}
+
+export async function fetchEnemPracticeFilterStats(
+  token: string,
+  filters: { subjectName: string } | { subjectArea: string },
+): Promise<EnemPracticeFilterStats> {
+  const params = new URLSearchParams(
+    'subjectName' in filters
+      ? { subjectName: filters.subjectName }
+      : { subjectArea: filters.subjectArea },
+  )
+  const response = await authFetch(`/api/enem/practice-filter-stats?${params}`, token)
+
+  if (!response.ok) {
+    await parseError(response, 'Falha ao carregar contagem por dificuldade')
+  }
+
+  return response.json() as Promise<EnemPracticeFilterStats>
 }
 
 export async function fetchSimulationHistoryAll(

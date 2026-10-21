@@ -70,4 +70,6 @@ export type StartSimulationBody = {
   questionCount?: number | null
   /** null or 0 = unlimited */
   timeLimitSeconds?: number | null
+  /** Subject practice only; omit or all three = no filter */
+  difficulties?: string[]
 }

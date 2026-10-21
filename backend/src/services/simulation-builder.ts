@@ -1,3 +1,4 @@
+import { parseDifficultyFilter } from '../lib/enem-difficulty.js'
 import {
   getDaySimulationQuestionTarget,
   isEnemForeignLanguage,
@@ -69,9 +70,11 @@ export async function planSimulation(
         await assertKnownPracticeSubjectArea(subjectArea)
       }
 
+      const difficulties = parseDifficultyFilter(body.difficulties)
+
       const { ids, yearsUsed } = subjectName
-        ? await pickQuestionIdsBySubjectName(subjectName, questionCount)
-        : await pickQuestionIdsBySubjectArea(subjectArea, questionCount)
+        ? await pickQuestionIdsBySubjectName(subjectName, questionCount, difficulties)
+        : await pickQuestionIdsBySubjectArea(subjectArea, questionCount, difficulties)
 
       if (ids.length === 0) {
         throw new Error(

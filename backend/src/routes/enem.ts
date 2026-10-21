@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { requireQuestionIndexSyncSecret } from '../middleware/sync-secret.js'
 import {
   getIndexCount,
+  getPracticeDifficultyCounts,
   getPracticeMetaFromIndex,
   QuestionIndexNotSyncedError,
   syncQuestionIndex,
@@ -47,6 +48,34 @@ enemRouter.get('/practice-meta', async (_req, res) => {
     const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
     res.status(status).json({
       error: 'Failed to fetch practice meta',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+enemRouter.get('/practice-filter-stats', async (req, res) => {
+  const subjectName = String(req.query.subjectName ?? '').trim()
+  const subjectArea = String(req.query.subjectArea ?? '').trim()
+
+  if (subjectName && subjectArea) {
+    res.status(400).json({ error: 'Informe subjectName ou subjectArea, não ambos' })
+    return
+  }
+
+  if (!subjectName && !subjectArea) {
+    res.status(400).json({ error: 'subjectName or subjectArea is required' })
+    return
+  }
+
+  try {
+    const stats = await getPracticeDifficultyCounts(
+      subjectName ? { subjectName } : { subjectArea },
+    )
+    res.json(stats)
+  } catch (error) {
+    const status = error instanceof QuestionIndexNotSyncedError ? 503 : 502
+    res.status(status).json({
+      error: 'Failed to fetch practice filter stats',
       message: error instanceof Error ? error.message : 'Unknown error',
     })
   }

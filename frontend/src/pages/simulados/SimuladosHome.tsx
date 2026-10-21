@@ -5,6 +5,7 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   deleteSimulation,
+  fetchEnemPracticeFilterStats,
   fetchEnemPracticeMeta,
   fetchSimulationHistoryAll,
   startSimulation,
@@ -17,6 +18,7 @@ import type {
   SubjectPracticeFilter,
 } from '../../types/simulation'
 import {
+  ENEM_DIFFICULTY_ORDER,
   ENEM_FOREIGN_LANGUAGE_OPTIONS,
   SIMULATION_MODES,
   ESSAY_TIMER_OPTIONS,
@@ -25,6 +27,7 @@ import {
   SUBJECT_PRACTICE_QUESTION_PRESETS,
   TIME_DAY_SECONDS,
   TIME_ESSAY_SECONDS,
+  type EnemDifficulty,
   type EnemForeignLanguage,
 } from '../../types/simulation'
 
@@ -70,6 +73,15 @@ export function SimuladosHome() {
   const [foreignLanguage, setForeignLanguage] = useState<EnemForeignLanguage>('Inglês')
   const [loading, setLoading] = useState(true)
   const [loadingMeta, setLoadingMeta] = useState(false)
+  const [loadingDifficultyStats, setLoadingDifficultyStats] = useState(false)
+  const [selectedDifficulties, setSelectedDifficulties] = useState<EnemDifficulty[]>([
+    ...ENEM_DIFFICULTY_ORDER,
+  ])
+  const [difficultyCounts, setDifficultyCounts] = useState<Record<EnemDifficulty, number>>({
+    Fácil: 0,
+    Média: 0,
+    Difícil: 0,
+  })
   const [starting, setStarting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -81,11 +93,12 @@ export function SimuladosHome() {
   const timerOptions = isEssaySimulation ? ESSAY_TIMER_OPTIONS : SIMULATION_TIMER_OPTIONS
 
   const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
-  const selectedPracticeSubject = practiceSubjects.find((item) => item.name === subjectName)
-  const availableCount =
-    practiceFilter === 'subject'
-      ? (selectedPracticeSubject?.count ?? 0)
-      : (selectedSubjectArea?.count ?? 0)
+
+  const availableCount = useMemo(() => {
+    if (!isSubjectPractice) return 0
+    return selectedDifficulties.reduce((sum, difficulty) => sum + difficultyCounts[difficulty], 0)
+  }, [isSubjectPractice, selectedDifficulties, difficultyCounts])
+
   const loadableCount = loadableQuestionCount(availableCount)
 
   const practiceSubjectsByArea = useMemo(() => {
@@ -168,6 +181,36 @@ export function SimuladosHome() {
   }, [token, isSubjectPractice, searchParams])
 
   useEffect(() => {
+    if (!token || !isSubjectPractice) return
+
+    if (practiceFilter === 'subject' && !subjectName) return
+    if (practiceFilter === 'topic' && !subjectArea) return
+
+    let cancelled = false
+    setLoadingDifficultyStats(true)
+
+    const filters =
+      practiceFilter === 'subject' ? { subjectName } : { subjectArea }
+
+    fetchEnemPracticeFilterStats(token, filters)
+      .then((stats) => {
+        if (cancelled) return
+        setDifficultyCounts(stats.byDifficulty)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Erro ao carregar dificuldades')
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDifficultyStats(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [token, isSubjectPractice, practiceFilter, subjectName, subjectArea])
+
+  useEffect(() => {
     setTimeLimitSeconds(defaultTimerForMode(mode))
   }, [mode])
 
@@ -210,10 +253,16 @@ export function SimuladosHome() {
 
   function handleSubjectAreaChange(nextArea: string) {
     setSubjectArea(nextArea)
-    const next = subjectAreas.find((item) => item.area === nextArea)
-    if (next) {
-      setQuestionCount(defaultQuestionSelection(next.count))
-    }
+  }
+
+  function toggleDifficulty(difficulty: EnemDifficulty) {
+    setSelectedDifficulties((prev) => {
+      if (prev.includes(difficulty)) {
+        if (prev.length === 1) return prev
+        return prev.filter((item) => item !== difficulty)
+      }
+      return [...prev, difficulty]
+    })
   }
 
   async function handleDeleteInProgress(attemptId: string) {
@@ -248,6 +297,9 @@ export function SimuladosHome() {
             ...(practiceFilter === 'subject' ? { subjectName } : { subjectArea }),
             questionCount: questionCount === 'all' ? null : questionCount,
             timeLimitSeconds,
+            ...(selectedDifficulties.length < ENEM_DIFFICULTY_ORDER.length
+              ? { difficulties: selectedDifficulties }
+              : {}),
           }
         : mode === 'day_one'
           ? {
@@ -276,7 +328,9 @@ export function SimuladosHome() {
   const canStart = isSubjectPractice
     ? !starting &&
       !loadingMeta &&
+      !loadingDifficultyStats &&
       availableCount > 0 &&
+      selectedDifficulties.length > 0 &&
       (practiceFilter === 'subject' ? Boolean(subjectName) : Boolean(subjectArea))
     : !starting
 
@@ -339,7 +393,7 @@ export function SimuladosHome() {
                       {item.label}
                     </option>
                   ))}
-                </select>anos
+                </select>
               </label>
             </>
           )}
@@ -401,14 +455,53 @@ export function SimuladosHome() {
                       >
                         Explorar tópicos visualmente
                       </Link>
-                      {selectedSubjectArea && (
+                      {selectedSubjectArea && !loadingDifficultyStats && (
                         <span className="text-muted">
-                          {selectedSubjectArea.count} questões (inclui subtópicos)
+                          {availableCount} de {selectedSubjectArea.count} questões (filtro de
+                          dificuldade)
                         </span>
                       )}
                     </div>
                   </div>
                 )}
+
+                <fieldset className="block sm:col-span-2 lg:col-span-3">
+                  <legend className="mb-2 block text-sm text-muted-foreground">Dificuldade</legend>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    {ENEM_DIFFICULTY_ORDER.map((difficulty) => {
+                      const count = difficultyCounts[difficulty]
+                      const checked = selectedDifficulties.includes(difficulty)
+                      const onlyOneSelected = checked && selectedDifficulties.length === 1
+
+                      return (
+                        <label
+                          key={difficulty}
+                          className="flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={
+                              loadingDifficultyStats ||
+                              loadingMeta ||
+                              onlyOneSelected
+                            }
+                            onChange={() => toggleDifficulty(difficulty)}
+                            className="size-4 rounded border-border accent-accent-strong"
+                          />
+                          <span>
+                            {difficulty}
+                            {loadingDifficultyStats ? (
+                              <span className="text-muted"> (…)</span>
+                            ) : (
+                              <span className="text-muted"> ({count})</span>
+                            )}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </fieldset>
 
                 <label className="block">
                   <span className="mb-1.5 block text-sm text-muted-foreground">Questões</span>
@@ -418,7 +511,7 @@ export function SimuladosHome() {
                       const value = e.target.value
                       setQuestionCount(value === 'all' ? 'all' : Number(value))
                     }}
-                    disabled={loadingMeta || availableCount === 0}
+                    disabled={loadingMeta || loadingDifficultyStats || availableCount === 0}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
                   >
                     {questionOptions.presets.map((count) => (
