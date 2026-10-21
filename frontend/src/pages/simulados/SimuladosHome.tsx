@@ -410,12 +410,6 @@ export function SimuladosHome() {
                   </div>
                 )}
 
-                {practiceFilter === 'subject' && (
-                  <p className="text-sm text-muted sm:col-span-3">
-                    Questões sorteadas entre vários tópicos e anos da matéria selecionada.
-                  </p>
-                )}
-
                 <label className="block">
                   <span className="mb-1.5 block text-sm text-muted-foreground">Questões</span>
                   <select

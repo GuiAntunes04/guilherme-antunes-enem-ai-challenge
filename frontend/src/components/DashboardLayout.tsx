@@ -89,7 +89,7 @@ function DashboardLayoutContent() {
         aria-hidden
       />
 
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-7xl">
+      <div className="relative flex min-h-dvh w-full">
         <aside
           className={cn(
             'hidden shrink-0 border-r border-border-subtle md:sticky md:top-0 md:flex md:h-dvh md:max-h-dvh md:flex-col md:bg-surface-raised/40 md:backdrop-blur-sm',
