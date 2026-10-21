@@ -45,7 +45,7 @@ function formatAttemptTitle(attempt: Record<string, unknown>): string {
   const examYear = attempt.exam_year as number | null | undefined
 
   if (yearsUsed && yearsUsed.length > 1) {
-    return `Multi-anos (${yearsUsed.join(', ')})`
+    return `ENEM ${yearsUsed.join(', ')}`
   }
 
   if (yearsUsed?.length === 1) {

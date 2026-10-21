@@ -19,6 +19,7 @@ import type {
 import {
   ENEM_FOREIGN_LANGUAGE_OPTIONS,
   SIMULATION_MODES,
+  ESSAY_TIMER_OPTIONS,
   SIMULATION_TIMER_OPTIONS,
   SUBJECT_PRACTICE_MAX_QUESTIONS,
   SUBJECT_PRACTICE_QUESTION_PRESETS,
@@ -76,6 +77,8 @@ export function SimuladosHome() {
   const isSubjectPractice = mode === 'subject_practice'
   const isDaySimulation = mode === 'day_one' || mode === 'day_two'
   const isEssaySimulation = mode === 'essay'
+
+  const timerOptions = isEssaySimulation ? ESSAY_TIMER_OPTIONS : SIMULATION_TIMER_OPTIONS
 
   const selectedSubjectArea = subjectAreas.find((item) => item.area === subjectArea)
   const selectedPracticeSubject = practiceSubjects.find((item) => item.name === subjectName)
@@ -336,23 +339,9 @@ export function SimuladosHome() {
                       {item.label}
                     </option>
                   ))}
-                </select>
+                </select>anos
               </label>
             </>
-          )}
-
-          {mode === 'day_two' && (
-            <p className="text-sm text-muted">
-              90 questões distribuídas por disciplina (padrão ENEM), sorteadas entre todos os
-              anos disponíveis. Cada simulado é único em relação aos seus anteriores.
-            </p>
-          )}
-
-          {isEssaySimulation && (
-            <p className="text-sm text-muted">
-              Tema gerado aleatoriamente pela IA. Escreva sua dissertação no tempo configurado e
-              receba correção nas 5 competências do ENEM.
-            </p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -468,7 +457,7 @@ export function SimuladosHome() {
                   }}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
                 >
-                  {SIMULATION_TIMER_OPTIONS.map((option) => (
+                  {timerOptions.map((option) => (
                     <option
                       key={option.label}
                       value={option.value === null ? 'unlimited' : String(option.value)}

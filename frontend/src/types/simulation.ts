@@ -11,6 +11,7 @@ export const ENEM_FOREIGN_LANGUAGE_OPTIONS: { value: EnemForeignLanguage; label:
 
 export const TIME_DAY_SECONDS = 270 * 60
 export const TIME_ESSAY_SECONDS = 90 * 60
+export const TIME_ESSAY_MAX_SECONDS = 120 * 60
 
 export const SIMULATION_MODES: { value: SimulationMode; label: string; description: string }[] = [
   {
@@ -21,12 +22,12 @@ export const SIMULATION_MODES: { value: SimulationMode; label: string; descripti
   {
     value: 'day_one',
     label: '1º dia ENEM',
-    description: '90 questões · Linguagens + Humanas · multi-anos',
+    description: '90 questões · Linguagens + Humanas',
   },
   {
     value: 'day_two',
     label: '2º dia ENEM',
-    description: '90 questões · Natureza + Matemática · multi-anos',
+    description: '90 questões · Natureza + Matemática',
   },
   {
     value: 'essay',
@@ -40,14 +41,17 @@ export const SIMULATION_TIMER_OPTIONS: {
   label: string
 }[] = [
   { value: null, label: 'Ilimitado' },
-  { value: 15 * 60, label: '15 minutos' },
   { value: 30 * 60, label: '30 minutos' },
-  { value: 45 * 60, label: '45 minutos' },
   { value: 60 * 60, label: '1 hora' },
   { value: 90 * 60, label: '1h30' },
   { value: 120 * 60, label: '2 horas' },
   { value: TIME_DAY_SECONDS, label: '4h30 (ENEM)' },
 ]
+
+/** Redação: ilimitado ou até 2 horas (sem 4h30). */
+export const ESSAY_TIMER_OPTIONS = SIMULATION_TIMER_OPTIONS.filter(
+  (option) => option.value === null || option.value <= TIME_ESSAY_MAX_SECONDS,
+)
 
 export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const SUBJECT_PRACTICE_QUESTION_PRESETS = [5, 10, 15, 20, 30, 45] as const

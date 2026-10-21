@@ -5,7 +5,7 @@ import {
 import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { EssayTheme } from '../types/essay.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
-import { TIME_ESSAY_SECONDS } from '../types/simulation.js'
+import { resolveEssayTimeLimitSeconds, TIME_ESSAY_SECONDS } from '../types/simulation.js'
 import { generateEssayTheme } from './gemini.js'
 import { sortLikeEnem } from './enemhub-api.js'
 import { resolveQuestionsByIds } from './question-index.js'
@@ -166,7 +166,9 @@ export async function planSimulation(
 
     case 'essay': {
       const theme = await generateEssayTheme()
-      const timeLimitSeconds = resolveTimeLimitSeconds(body) ?? TIME_ESSAY_SECONDS
+      const timeLimitSeconds = resolveEssayTimeLimitSeconds(body.timeLimitSeconds, {
+        defaultWhenMissing: TIME_ESSAY_SECONDS,
+      })
 
       return {
         questionIds: [],

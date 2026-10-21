@@ -7,6 +7,7 @@ import { extractTextFromUpload } from '../services/essay-import.js'
 import { computeEssayElapsedSeconds, mapEssay } from '../services/essay-mapper.js'
 import { evaluateEssay, generateEssayTheme } from '../services/gemini.js'
 import type { EssayRow, EssaySource } from '../types/essay.js'
+import { resolveEssayTimeLimitSeconds } from '../types/simulation.js'
 
 export const essaysRouter = Router()
 
@@ -81,11 +82,9 @@ async function finalizeLinkedSimulationAttempt(
 essaysRouter.post('/start', geminiRateLimiter, async (req, res) => {
   const userId = req.user!.id
   const source = (req.body.source as EssaySource | undefined) ?? 'redacao'
-  const timeLimitRaw = req.body.timeLimitSeconds
-  const timeLimitSeconds =
-    timeLimitRaw === null || timeLimitRaw === undefined || Number(timeLimitRaw) <= 0
-      ? null
-      : Number(timeLimitRaw)
+  const timeLimitSeconds = resolveEssayTimeLimitSeconds(req.body.timeLimitSeconds, {
+    defaultWhenMissing: null,
+  })
 
   try {
     const theme = await generateEssayTheme()

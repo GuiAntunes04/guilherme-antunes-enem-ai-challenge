@@ -11,7 +11,7 @@ export const SIMULATION_MODE_LABELS: Record<SimulationMode, string> = {
 export const LEGACY_SIMULATION_MODE_LABELS: Record<string, string> = {
   quick_practice: 'Prática rápida',
   area_full: 'Área completa (45 questões)',
-  random_mixed: 'Aleatório multi-anos',
+  random_mixed: 'Aleatório',
 }
 
 export const ENEM_AREA_ORDER = [
@@ -35,6 +35,26 @@ export const DAY_TWO_AREAS = [
 export const SUBJECT_PRACTICE_MAX_QUESTIONS = 45
 export const TIME_DAY_SECONDS = 270 * 60
 export const TIME_ESSAY_SECONDS = 90 * 60
+export const TIME_ESSAY_MAX_SECONDS = 120 * 60
+
+/** Redação: null = ilimitado; caso contrário cap em 2 horas. */
+export function resolveEssayTimeLimitSeconds(
+  raw: unknown,
+  options: { defaultWhenMissing?: number | null } = {},
+): number | null {
+  if (raw === null) return null
+
+  if (raw === undefined) {
+    return options.defaultWhenMissing ?? null
+  }
+
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value <= 0) {
+    return options.defaultWhenMissing ?? null
+  }
+
+  return Math.min(value, TIME_ESSAY_MAX_SECONDS)
+}
 
 export type EnemForeignLanguage = 'Inglês' | 'Espanhol'
 
