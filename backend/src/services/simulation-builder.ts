@@ -2,13 +2,10 @@ import {
   getDaySimulationQuestionTarget,
   isEnemForeignLanguage,
 } from '../lib/enem-knowledge-areas.js'
-import type { EnemHubQuestion } from '../types/enemhub.js'
 import type { EssayTheme } from '../types/essay.js'
 import type { SimulationMode, StartSimulationBody } from '../types/simulation.js'
 import { resolveEssayTimeLimitSeconds, TIME_ESSAY_SECONDS } from '../types/simulation.js'
 import { generateEssayTheme } from './gemini.js'
-import { sortLikeEnem } from './enemhub-api.js'
-import { resolveQuestionsByIds } from './question-index.js'
 import {
   assertKnownPracticeSubjectArea,
   assertKnownPracticeSubjectName,
@@ -184,24 +181,6 @@ export async function planSimulation(
     default:
       throw new Error('Invalid simulation mode')
   }
-}
-
-export async function loadSimulationQuestions(
-  questionIds: string[],
-  mode: SimulationMode,
-): Promise<EnemHubQuestion[]> {
-  const hubQuestions = await resolveQuestionsByIds(questionIds)
-  const questionMap = new Map(hubQuestions.map((question) => [question.id, question]))
-  const ordered = questionIds.flatMap((id) => {
-    const question = questionMap.get(id)
-    return question ? [question] : []
-  })
-
-  if (mode === 'day_two') {
-    return sortLikeEnem(ordered)
-  }
-
-  return ordered
 }
 
 export function isValidMode(mode: string): mode is SimulationMode {

@@ -8,7 +8,7 @@ export const statsRouter = Router()
 statsRouter.get('/', requireAuth, async (req, res) => {
   const userId = req.user!.id
 
-  const [simulations, essays, tutorSessions, dashboard] = await Promise.all([
+  const [simulations, essays, dashboard] = await Promise.all([
     supabaseAdmin
       .from('simulation_attempts')
       .select('id', { count: 'exact', head: true })
@@ -19,21 +19,13 @@ statsRouter.get('/', requireAuth, async (req, res) => {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('status', 'done'),
-    supabaseAdmin
-      .from('tutor_sessions')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .is('simulation_attempt_id', null),
     buildDashboardStats(userId),
   ])
 
-  if (simulations.error || essays.error || tutorSessions.error) {
+  if (simulations.error || essays.error) {
     res.status(500).json({
       error: 'Failed to load stats',
-      message:
-        simulations.error?.message ??
-        essays.error?.message ??
-        tutorSessions.error?.message,
+      message: simulations.error?.message ?? essays.error?.message,
     })
     return
   }
@@ -41,7 +33,6 @@ statsRouter.get('/', requireAuth, async (req, res) => {
   res.json({
     simulations: simulations.count ?? 0,
     essays: essays.count ?? 0,
-    tutorSessions: tutorSessions.count ?? 0,
     subjectPerformance: dashboard.subjectPerformance,
     simulationTrend: dashboard.simulationTrend,
   })

@@ -111,10 +111,6 @@ async function backfillIndexRows(rows: ReturnType<typeof toIndexRow>[]): Promise
   }
 }
 
-function mapRow(row: QuestionIndexEntry): QuestionIndexEntry {
-  return row
-}
-
 export async function getIndexCount(): Promise<number> {
   const { count, error } = await supabaseAdmin
     .from('enem_questions_index')
@@ -415,7 +411,7 @@ async function queryIndexEntries(
 
     if (!data?.length) break
 
-    rows.push(...data.map(mapRow))
+    rows.push(...(data as QuestionIndexEntry[]))
 
     if (data.length < INDEX_PAGE_SIZE) break
   }

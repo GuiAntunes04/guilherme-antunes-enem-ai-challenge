@@ -36,7 +36,6 @@ export type SimulationTrendPoint = {
 export type StatsResponse = {
   simulations: number
   essays: number
-  tutorSessions: number
   subjectPerformance: SubjectPerformance[]
   simulationTrend: SimulationTrendPoint[]
 }

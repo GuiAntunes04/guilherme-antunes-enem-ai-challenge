@@ -5,9 +5,6 @@ import type {
   EnemHubQuestion,
   SanitizedQuestion,
 } from '../types/enemhub.js'
-import { resolveKnowledgeAreaFromSubject } from '../lib/enem-knowledge-areas.js'
-import { ENEM_AREA_ORDER } from '../types/simulation.js'
-
 const BASE_URL = 'https://api.enemhub.com.br/v1/enem/questions'
 const MAX_RETRIES = 8
 /** Parallel fetches per chunk; pause between chunks to avoid rate limits. */
@@ -160,21 +157,4 @@ export function shuffleAndPick<T>(items: T[], count: number): T[] {
   }
 
   return copy.slice(0, count)
-}
-
-function knowledgeAreaOrder(subjectName: string | undefined): number {
-  const area = resolveKnowledgeAreaFromSubject(subjectName)
-  if (!area) return ENEM_AREA_ORDER.length
-  return ENEM_AREA_ORDER.indexOf(area)
-}
-
-export function sortLikeEnem(questions: EnemHubQuestion[]): EnemHubQuestion[] {
-  return [...questions].sort((a, b) => {
-    const areaCompare =
-      knowledgeAreaOrder(a.subject?.name) - knowledgeAreaOrder(b.subject?.name)
-    if (areaCompare !== 0) return areaCompare
-    const nameCompare = (a.subject?.name ?? '').localeCompare(b.subject?.name ?? '')
-    if (nameCompare !== 0) return nameCompare
-    return a.year - b.year
-  })
 }

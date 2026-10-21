@@ -41,7 +41,6 @@ export function HomePage() {
   const statCards = [
     { label: 'Simulados realizados', value: stats?.simulations ?? 0 },
     { label: 'Redações enviadas', value: stats?.essays ?? 0 },
-    { label: 'Conversas com tutor', value: stats?.tutorSessions ?? 0 },
   ]
 
   const averageAccuracy =
@@ -72,7 +71,7 @@ export function HomePage() {
         }
       />
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-3">
+      <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {statCards.map((stat) => (
           <Card key={stat.label} as="article">
             <p className="text-sm text-muted">{stat.label}</p>
