@@ -72,11 +72,18 @@ export function SimulationQuizPage() {
   const tutorSimulationCache = useRef(
     new Map<string, { sessionId: string; messages: TutorMessage[] }>(),
   )
+  const questionScrollRef = useRef<HTMLDivElement>(null)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   useEffect(() => {
     quizStartedAtRef.current = quizStartedAt
   }, [quizStartedAt])
+
+  useEffect(() => {
+    if (loading || questions.length === 0) return
+
+    questionScrollRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })
+  }, [currentIndex, loading, questions.length])
 
   useEffect(() => {
     if (!token || !attemptId) return
@@ -299,7 +306,7 @@ export function SimulationQuizPage() {
   )
 
   return (
-    <div className="max-w-6xl">
+    <div ref={questionScrollRef} className="max-w-6xl scroll-mt-4">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm text-muted">
