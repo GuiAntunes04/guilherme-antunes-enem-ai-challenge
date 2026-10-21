@@ -4,7 +4,7 @@ Aplicação React (Vite + TypeScript + Tailwind).
 
 | | |
 |---|---|
-| **Demo** | [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/) |
+| **Demo** | [enemprep-ai.com.br](https://enemprep-ai.com.br/) |
 | **Docs** | [README.md](../README.md) · [DEPLOY.md](../DEPLOY.md) |
 
 ```bash

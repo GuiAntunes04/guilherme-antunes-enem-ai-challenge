@@ -1,6 +1,6 @@
 # Screenshots
 
-Capturas da aplicação em produção ([enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/)).
+Capturas da aplicação em produção ([enemprep-ai.com.br](https://enemprep-ai.com.br/)).
 
 | Arquivo | Conteúdo |
 |---------|----------|

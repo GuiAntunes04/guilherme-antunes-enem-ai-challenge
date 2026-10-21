@@ -2,30 +2,41 @@
 
 Plataforma web de estudos para o ENEM — simulados, tutor com IA e correção de redação.
 
-## Acesso
+## Acesso (demo do autor)
 
 | Ambiente | URL |
 |----------|-----|
-| **Frontend (Vercel)** | [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/) |
+| **Frontend** | [enemprep-ai.com.br](https://enemprep-ai.com.br/) · [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/) |
 | **Backend (Render)** | [guilherme-antunes-enem-ai-challenge.onrender.com](https://guilherme-antunes-enem-ai-challenge.onrender.com) |
 
-> Deploy em produção. Guia de configuração: [`DEPLOY.md`](DEPLOY.md).
+> Links acima apontam para o **deploy de demonstração**. Para rodar ou publicar sua própria instância, use as seções [Como usar este repositório](#como-usar-este-repositório) e [`DEPLOY.md`](DEPLOY.md).
+
+## Como usar este repositório
+
+| Objetivo | O que fazer |
+|----------|-------------|
+| **Experimentar** | Abra a demo na tabela [Acesso](#acesso-demo-do-autor). |
+| **Desenvolver localmente** | Siga [Como rodar localmente](#como-rodar-localmente) (Supabase, EnemHub e Gemini são **suas** chaves). |
+| **Publicar um fork** | [`DEPLOY.md`](DEPLOY.md) + migrations em [`supabase/README.md`](supabase/README.md) + `npm run sync:questions`. |
+
+Não commite arquivos `.env`. Cada instância precisa de projeto Supabase, chaves Gemini e EnemHub conforme os termos dos provedores.
 
 ## Sobre o projeto
 
 O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ensino Médio com:
 
-- **Simulados** com questões reais (EnemHub): prática por matéria ou tópico, 1º dia (90 questões), 2º dia (90 questões) e redação cronometrada
+- **Simulados** com questões reais ([EnemHub](https://docs.enemhub.com.br/)): prática por matéria ou tópico (com filtro de dificuldade), 1º dia (90 questões), 2º dia (90 questões) e redação cronometrada
+- **Explorador de tópicos** para navegar o índice por área de conhecimento
 - **Tutor IA** (Google Gemini) em chat livre ou contextualizado por questão durante o simulado
 - **Corretor de redação** com feedback nas 5 competências do ENEM, geração de temas e importação por foto/PDF/DOCX
-- **Dashboard** com simulados realizados, redações enviadas, conversas com tutor, gráfico de evolução e desempenho por matéria
+- **Dashboard** com simulados realizados, redações enviadas, gráfico de evolução e desempenho por matéria
 
 ### Modos de simulado
 
 | Modo | Descrição |
 |------|-----------|
-| Matéria específica | Questões aleatórias por matéria ENEM ou tópico, com cronômetro opcional |
-| 1º dia ENEM | 90 questões — Linguagens + Humanas |
+| Matéria específica | Questões aleatórias por matéria ENEM ou tópico; filtro **Fácil / Média / Difícil** (multi-seleção); cronômetro opcional |
+| 1º dia ENEM | 90 questões — Linguagens + Humanas; escolha de **Inglês** ou **Espanhol** nas 5 primeiras questões de LE |
 | 2º dia ENEM | 90 questões — Natureza + Matemática |
 | Redação ENEM | Tema gerado pela IA, correção nas 5 competências |
 
@@ -40,7 +51,7 @@ O **ENEM Prep AI** ajuda estudantes a se prepararem para o Exame Nacional do Ens
 
 ## Screenshots
 
-Capturas da aplicação em [enem-prep-ai.vercel.app](https://enem-prep-ai.vercel.app/). Arquivos em [`docs/screenshots/`](docs/screenshots/).
+Capturas da aplicação em produção. Arquivos em [`docs/screenshots/`](docs/screenshots/).
 
 ### Autenticação
 
@@ -82,7 +93,9 @@ O backend sincroniza o acervo EnemHub para a tabela `enem_questions_index` no Su
 - **Metadados** — ano, matéria, tópico, dificuldade, gabarito
 - **Conteúdo** — enunciado e alternativas (JSONB)
 
-Durante simulados, as questões são servidas **do Supabase**, evitando o rate limit da EnemHub (10 req/min no plano Free). A API EnemHub é usada apenas no sync inicial e como fallback pontual.
+Durante simulados, as questões são servidas **do Supabase**, evitando o rate limit da EnemHub (10 req/min no plano Free). A API EnemHub é usada no sync inicial e como fallback pontual.
+
+As questões são fornecidas pela **EnemHub**; respeite os [termos e limites](https://docs.enemhub.com.br/) da API ao sincronizar ou redistribuir dados.
 
 ## Estrutura do repositório
 
@@ -126,6 +139,7 @@ npm run dev
 | `ENEMHUB_API_KEY` | EnemHub — produto ENEM |
 | `ENEMHUB_API_KEYS` | (Opcional) Chaves extras — fallback em rate limit |
 | `FRONTEND_URL` | `http://localhost:5173` (lista separada por vírgula para CORS) |
+| `QUESTION_INDEX_SYNC_SECRET` | (Opcional) Protege `POST /api/enem/sync`; sem valor, use só `npm run sync:questions` |
 
 Servidor: `http://localhost:3001`
 
@@ -148,7 +162,7 @@ Aplicação: `http://localhost:5173`
 
 ### Banco de dados (Supabase)
 
-Aplique **todas** as migrations na ordem em [`supabase/README.md`](supabase/README.md) (10 arquivos SQL).
+Aplique **todas** as migrations na ordem listada em [`supabase/README.md`](supabase/README.md).
 
 Verifique o schema após aplicar:
 
@@ -194,4 +208,6 @@ O sync inicial usa a API de listagem (~50 requests). Simulados em produção lee
 
 ## Licença
 
-Projeto de código aberto para fins educacionais.
+[MIT](LICENSE) — Copyright (c) 2026 Guilherme Antunes.
+
+Questões e metadados ENEM obtidos via EnemHub permanecem sujeitos aos termos da EnemHub e do INEP.

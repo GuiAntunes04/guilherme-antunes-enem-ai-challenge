@@ -1,8 +1,8 @@
 # Supabase
 
-Banco de dados e autenticação do [ENEM Prep AI](https://enem-prep-ai.vercel.app/).
+Banco de dados e autenticação do [ENEM Prep AI](https://enemprep-ai.com.br/).
 
-Após aplicar as migrations, configure **Authentication → URL Configuration** com Site URL `https://enem-prep-ai.vercel.app` (detalhes em [`DEPLOY.md`](../DEPLOY.md)).
+Após aplicar as migrations, configure **Authentication → URL Configuration** com a URL pública do seu frontend (ex.: `https://enemprep-ai.com.br` ou `https://enem-prep-ai.vercel.app` — detalhes em [`DEPLOY.md`](../DEPLOY.md)).
 
 ## Aplicar migrations
 
@@ -22,8 +22,10 @@ Após aplicar as migrations, configure **Authentication → URL Configuration** 
 | 8 | `migrations/20250919200000_essay_simulation.sql` |
 | 9 | `migrations/20250921100000_question_index_correct_alternative.sql` |
 | 10 | `migrations/20250921120000_question_index_content.sql` |
+| 11 | `migrations/20260320100000_essay_delete_policy.sql` |
+| 12 | `migrations/20260321120000_foreign_language_topic_paths.sql` |
 
-> A migration `20250919200000` usa `drop policy if exists` antes de recriar a policy de update em `essays`, permitindo reexecução segura no Supabase Preview.
+> Migrations com `drop policy if exists` (ex.: `20250919200000`, `20260320100000`) permitem reexecução segura no Supabase Preview.
 
 ## Tabelas criadas
 
