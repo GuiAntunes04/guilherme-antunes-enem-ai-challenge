@@ -12,6 +12,7 @@ function entry(id: string, subjectName: string, year = 2020): QuestionIndexEntry
     subject_area: null,
     difficulty: null,
     correct_alternative: null,
+    content: null,
   }
 }
 
