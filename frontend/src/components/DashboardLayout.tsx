@@ -7,6 +7,7 @@ import {
   SimulationQuizProvider,
   useSimulationQuizSidebarState,
 } from '../contexts/SimulationQuizContext'
+import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react'
 import { BrandMark } from './ui/BrandMark'
 import { Button } from './ui/Button'
 import { cn } from '../lib/cn'
@@ -38,32 +39,8 @@ function navLinkClass(isActive: boolean, collapsed: boolean) {
 }
 
 function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg
-      className="h-4 w-4 shrink-0"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      {collapsed ? (
-        <>
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <path d="M9 3v18" />
-          <path d="m14 9 3 3-3 3" />
-        </>
-      ) : (
-        <>
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <path d="M9 3v18" />
-          <path d="m13 9-3 3 3 3" />
-        </>
-      )}
-    </svg>
-  )
+  const Icon = collapsed ? ChevronsRight : ChevronsLeft
+  return <Icon className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
 }
 
 function DashboardLayoutContent() {
@@ -147,27 +124,33 @@ function DashboardLayoutContent() {
               sidebarNarrow ? 'px-2 py-2' : quizSidebar ? 'px-3 py-2' : 'p-3',
             )}
           >
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                title={sidebarNarrow ? item.label : undefined}
-                aria-label={sidebarNarrow ? item.label : undefined}
-                className={({ isActive }) => navLinkClass(isActive, sidebarNarrow)}
-              >
-                {sidebarNarrow ? (
-                  <span className="text-xs font-bold tabular-nums">{item.abbr}</span>
-                ) : (
-                  <>
-                    <span className="text-sm font-medium">{item.label}</span>
-                    {!quizSidebar && (
-                      <span className="mt-0.5 text-xs opacity-75">{item.description}</span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === '/'}
+                  title={sidebarNarrow ? item.label : undefined}
+                  aria-label={sidebarNarrow ? item.label : undefined}
+                  className={({ isActive }) => navLinkClass(isActive, sidebarNarrow)}
+                >
+                  {sidebarNarrow ? (
+                    <Icon className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                        <span className="text-sm font-medium">{item.label}</span>
+                      </span>
+                      {!quizSidebar && (
+                        <span className="mt-0.5 pl-7 text-xs opacity-75">{item.description}</span>
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              )
+            })}
           </nav>
 
           {quizSidebar && (
@@ -198,20 +181,7 @@ function DashboardLayoutContent() {
               title={sidebarNarrow ? 'Sair' : undefined}
             >
               {sidebarNarrow ? (
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <LogOut className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
               ) : (
                 'Sair'
               )}
@@ -236,17 +206,23 @@ function DashboardLayoutContent() {
           {menuOpen && (
             <div className="border-b border-border-subtle bg-surface-raised/95 p-4 md:hidden">
               <nav className="space-y-1">
-                {navItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/'}
-                    onClick={() => setMenuOpen(false)}
-                    className={({ isActive }) => navLinkClass(isActive, false)}
-                  >
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </NavLink>
-                ))}
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.path === '/'}
+                      onClick={() => setMenuOpen(false)}
+                      className={({ isActive }) => navLinkClass(isActive, false)}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                        <span className="text-sm font-medium">{item.label}</span>
+                      </span>
+                    </NavLink>
+                  )
+                })}
               </nav>
 
               {quizSidebar && (

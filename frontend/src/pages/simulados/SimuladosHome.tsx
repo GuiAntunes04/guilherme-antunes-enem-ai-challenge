@@ -338,8 +338,6 @@ export function SimuladosHome() {
     return <p className="text-muted">Carregando simulados...</p>
   }
 
-  const selectedMode = SIMULATION_MODES.find((m) => m.value === mode)
-
   return (
     <div className="max-w-5xl space-y-10">
       <PageHeader
@@ -372,10 +370,6 @@ export function SimuladosHome() {
               ))}
             </select>
           </label>
-
-          {selectedMode && (
-            <p className="text-sm text-muted">{selectedMode.description}</p>
-          )}
 
           {mode === 'day_one' && (
             <>

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { EssayWorkbench } from '../components/essay/EssayWorkbench'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
 import { deleteEssay, fetchEssays, startEssay } from '../lib/essays-api'
@@ -104,12 +103,12 @@ export function RedacaoPage() {
 
       {!essayId ? (
         <div className="space-y-6">
-          <Card padding="lg">
+          <div>
             {error && <Alert className="mb-4">{error}</Alert>}
             <Button disabled={starting || !token} onClick={() => void handleNewTheme()}>
               {starting ? 'Gerando tema...' : 'Gerar novo tema'}
             </Button>
-          </Card>
+          </div>
 
           {loadingList ? (
             <p className="text-sm text-muted">Carregando redações...</p>
