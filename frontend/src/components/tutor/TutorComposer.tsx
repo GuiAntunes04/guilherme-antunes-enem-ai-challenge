@@ -46,7 +46,7 @@ export function TutorComposer({
         placeholder={placeholder}
         disabled={disabled || sending}
         rows={2}
-        className="min-h-[44px] flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none focus:border-accent disabled:opacity-60"
+        className="min-h-[44px] flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent disabled:opacity-60"
       />
       <button
         type="submit"

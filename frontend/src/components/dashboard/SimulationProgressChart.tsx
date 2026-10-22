@@ -7,23 +7,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useChartPalette } from '../../contexts/ThemeContext'
 import type { SimulationTrendPoint } from '../../lib/api'
-
-const CHART = {
-  grid: '#243047',
-  tick: '#94a3b8',
-  tickMuted: '#64748b',
-  line: '#2dd4bf',
-  tooltipBg: '#0f1623',
-  tooltipBorder: '#243047',
-  tooltipText: '#eef2f9',
-} as const
 
 type SimulationProgressChartProps = {
   data: SimulationTrendPoint[]
 }
 
 export function SimulationProgressChart({ data }: SimulationProgressChartProps) {
+  const chart = useChartPalette()
+
   if (data.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-[var(--radius-card)] border border-dashed border-border bg-surface/40 px-6 text-center text-sm text-muted">
@@ -36,10 +29,10 @@ export function SimulationProgressChart({ data }: SimulationProgressChartProps) 
     <div className="h-80">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 16, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid stroke={CHART.grid} strokeDasharray="4 4" />
+          <CartesianGrid stroke={chart.grid} strokeDasharray="4 4" />
           <XAxis
             dataKey="label"
-            tick={{ fill: CHART.tick, fontSize: 11 }}
+            tick={{ fill: chart.tick, fontSize: 11 }}
             interval="preserveStartEnd"
             angle={-20}
             textAnchor="end"
@@ -47,15 +40,15 @@ export function SimulationProgressChart({ data }: SimulationProgressChartProps) 
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fill: CHART.tickMuted, fontSize: 11 }}
+            tick={{ fill: chart.tickMuted, fontSize: 11 }}
             tickFormatter={(value) => `${value}%`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: CHART.tooltipBg,
-              border: `1px solid ${CHART.tooltipBorder}`,
+              backgroundColor: chart.tooltipBg,
+              border: `1px solid ${chart.tooltipBorder}`,
               borderRadius: '0.5rem',
-              color: CHART.tooltipText,
+              color: chart.tooltipText,
             }}
             formatter={(value, _name, payload) => {
               const numeric = typeof value === 'number' ? value : Number(value ?? 0)
@@ -67,9 +60,9 @@ export function SimulationProgressChart({ data }: SimulationProgressChartProps) 
           <Line
             type="monotone"
             dataKey="accuracy"
-            stroke={CHART.line}
+            stroke={chart.line}
             strokeWidth={2}
-            dot={{ fill: CHART.line, r: 4 }}
+            dot={{ fill: chart.line, r: 4 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>

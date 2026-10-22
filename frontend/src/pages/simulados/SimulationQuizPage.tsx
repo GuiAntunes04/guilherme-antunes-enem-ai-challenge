@@ -361,7 +361,7 @@ export function SimulationQuizPage() {
               <button
                 type="button"
                 onClick={() => setCurrentIndex((i) => i + 1)}
-                className="rounded-lg bg-surface-overlay px-4 py-2 text-sm text-white hover:bg-surface-muted"
+                className="rounded-lg bg-surface-overlay px-4 py-2 text-sm text-foreground hover:bg-surface-muted"
               >
                 Próxima
               </button>

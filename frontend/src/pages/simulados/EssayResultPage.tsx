@@ -60,7 +60,7 @@ export function EssayResultPage({ attemptId }: EssayResultPageProps) {
         <p className="mb-3 text-sm font-medium uppercase tracking-wider text-accent">
           Resultado
         </p>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-foreground">
           {essay.aiFeedback.nota_total}/1000 pontos
         </h1>
         <p className="mt-2 text-muted">

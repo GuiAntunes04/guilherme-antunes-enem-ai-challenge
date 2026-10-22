@@ -20,7 +20,7 @@ export function QuestionCard({
     <article className="rounded-xl border border-border-subtle bg-surface-raised/90 p-6">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-foreground">
             {question.subjectName ?? 'Questão'} — ENEM {question.year}
           </h2>
           {question.difficulty && (
@@ -63,7 +63,7 @@ export function QuestionCard({
               onClick={() => onSelect(alternative.letter)}
               className={optionClass}
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-overlay text-sm font-medium text-white">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-overlay text-sm font-medium text-foreground">
                 {alternative.letter}
               </span>
               <span className="flex-1 text-sm text-muted-foreground">{alternative.text}</span>

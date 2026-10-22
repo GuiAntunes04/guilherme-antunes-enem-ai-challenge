@@ -37,7 +37,7 @@ function TopicTreeBranch({ node, depth = 0 }: TopicTreeBranchProps) {
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-white">{node.label}</p>
+          <p className="font-medium text-foreground">{node.label}</p>
           <p className="text-xs text-muted">
             {node.count} questões · inclui subtópicos
           </p>

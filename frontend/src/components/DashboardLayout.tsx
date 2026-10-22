@@ -10,6 +10,7 @@ import {
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react'
 import { BrandMark } from './ui/BrandMark'
 import { Button } from './ui/Button'
+import { ThemeToggle } from './ui/ThemeToggle'
 import { cn } from '../lib/cn'
 
 const SIDEBAR_COLLAPSED_KEY = 'enem-prep-sidebar-collapsed'
@@ -167,11 +168,12 @@ function DashboardLayoutContent() {
 
           <div
             className={cn(
-              'shrink-0 border-t border-border-subtle',
+              'shrink-0 space-y-2 border-t border-border-subtle',
               quizSidebar ? 'p-3' : 'mt-auto p-3',
               sidebarNarrow && 'px-2',
             )}
           >
+            <ThemeToggle compact={sidebarNarrow} />
             <Button
               variant="secondary"
               fullWidth={!sidebarNarrow}
@@ -241,7 +243,8 @@ function DashboardLayoutContent() {
                 </div>
               )}
 
-              <Button variant="secondary" fullWidth className="mt-4" onClick={() => signOut()}>
+              <ThemeToggle className="mt-4" />
+              <Button variant="secondary" fullWidth className="mt-3" onClick={() => signOut()}>
                 Sair
               </Button>
             </div>

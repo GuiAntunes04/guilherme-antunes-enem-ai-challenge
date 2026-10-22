@@ -1,8 +1,11 @@
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import type { Request } from 'express'
 
 function clientKey(req: Request): string {
-  return req.user?.id ?? req.ip ?? 'unknown'
+  if (req.user?.id) return req.user.id
+  const ip = req.ip
+  if (!ip) return 'unknown'
+  return ipKeyGenerator(ip)
 }
 
 const rateLimitMessage = {

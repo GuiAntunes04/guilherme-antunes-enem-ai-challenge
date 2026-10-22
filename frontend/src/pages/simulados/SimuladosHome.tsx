@@ -361,7 +361,7 @@ export function SimuladosHome() {
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as SimulationMode)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent"
             >
               {SIMULATION_MODES.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -380,7 +380,7 @@ export function SimuladosHome() {
                 <select
                   value={foreignLanguage}
                   onChange={(e) => setForeignLanguage(e.target.value as EnemForeignLanguage)}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent"
                 >
                   {ENEM_FOREIGN_LANGUAGE_OPTIONS.map((item) => (
                     <option key={item.value} value={item.value}>
@@ -403,7 +403,7 @@ export function SimuladosHome() {
                       handlePracticeFilterChange(e.target.value as SubjectPracticeFilter)
                     }
                     disabled={loadingMeta}
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent disabled:opacity-60"
                   >
                     <option value="subject">Matéria ENEM</option>
                     <option value="topic">Tópico específico</option>
@@ -417,7 +417,7 @@ export function SimuladosHome() {
                       value={subjectName}
                       onChange={(e) => handleSubjectNameChange(e.target.value)}
                       disabled={loadingMeta || practiceSubjects.length === 0}
-                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent disabled:opacity-60"
                     >
                       {loadingMeta ? (
                         <option value="">Carregando...</option>
@@ -506,7 +506,7 @@ export function SimuladosHome() {
                       setQuestionCount(value === 'all' ? 'all' : Number(value))
                     }}
                     disabled={loadingMeta || loadingDifficultyStats || availableCount === 0}
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent disabled:opacity-60"
                   >
                     {questionOptions.presets.map((count) => (
                       <option key={count} value={count}>
@@ -536,7 +536,7 @@ export function SimuladosHome() {
                     const value = e.target.value
                     setTimeLimitSeconds(value === 'unlimited' ? null : Number(value))
                   }}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent"
                 >
                   {timerOptions.map((option) => (
                     <option
@@ -568,7 +568,7 @@ export function SimuladosHome() {
 
       {inProgress.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold text-white">Em andamento</h2>
+          <h2 className="text-lg font-semibold text-foreground">Em andamento</h2>
           <div className="mt-4 space-y-3">
             {inProgress.map((item) => (
               <div
@@ -580,7 +580,7 @@ export function SimuladosHome() {
                   className="flex min-w-0 flex-1 items-center justify-between px-5 py-4"
                 >
                   <div>
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-foreground">
                       {item.attemptTitle ??
                         (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
                       — {item.disciplineLabel ?? item.discipline}
@@ -609,7 +609,7 @@ export function SimuladosHome() {
       )}
 
       <section>
-        <h2 className="text-lg font-semibold text-white">Histórico</h2>
+        <h2 className="text-lg font-semibold text-foreground">Histórico</h2>
 
         {history.length === 0 ? (
           <p className="mt-4 text-sm text-muted">Nenhum simulado realizado ainda.</p>
@@ -622,7 +622,7 @@ export function SimuladosHome() {
                 className="flex items-center justify-between rounded-xl border border-border-subtle bg-surface-raised/90 px-5 py-4 transition hover:border-accent/35"
               >
                 <div>
-                  <p className="font-medium text-white">
+                  <p className="font-medium text-foreground">
                     {item.attemptTitle ?? (item.exam_year ? `ENEM ${item.exam_year}` : 'Simulado')}{' '}
                     — {item.disciplineLabel ?? item.discipline}
                   </p>

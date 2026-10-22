@@ -1,8 +1,18 @@
 import { Link } from 'react-router-dom'
+import { useTheme } from '../../contexts/ThemeContext'
+import type { ResolvedTheme } from '../../lib/theme'
 import { cn } from '../../lib/cn'
 
-const LOGO_WORDMARK_SRC = '/brand/logo-wordmark.png'
-const LOGO_MARK_SRC = '/brand/logo-mark.png'
+const LOGO = {
+  wordmark: {
+    dark: '/brand/logo-wordmark.png',
+    light: '/brand/logo-wordmark-light.png',
+  },
+  mark: {
+    dark: '/brand/logo-mark.png',
+    light: '/brand/logo-mark-light.png',
+  },
+} as const
 
 type BrandMarkProps = {
   className?: string
@@ -10,10 +20,15 @@ type BrandMarkProps = {
   compact?: boolean
 }
 
-function LogoWordmark({ className }: { className?: string }) {
+function logoSources(resolved: ResolvedTheme) {
+  const variant = resolved === 'light' ? 'light' : 'dark'
+  return { wordmark: LOGO.wordmark[variant], mark: LOGO.mark[variant] }
+}
+
+function LogoWordmark({ src, className }: { src: string; className?: string }) {
   return (
     <img
-      src={LOGO_WORDMARK_SRC}
+      src={src}
       alt="ENEM Prep"
       className={cn(
         'h-7 w-auto max-w-[min(100%,11rem)] shrink-0 object-contain sm:h-8 md:h-9 md:max-w-[min(100%,13.5rem)]',
@@ -26,10 +41,10 @@ function LogoWordmark({ className }: { className?: string }) {
   )
 }
 
-function LogoMark({ className }: { className?: string }) {
+function LogoMark({ src, className }: { src: string; className?: string }) {
   return (
     <img
-      src={LOGO_MARK_SRC}
+      src={src}
       alt=""
       className={cn('shrink-0 object-contain', className)}
       width={145}
@@ -40,10 +55,16 @@ function LogoMark({ className }: { className?: string }) {
 }
 
 export function BrandMark({ className, to = '/', compact = false }: BrandMarkProps) {
+  const { resolved } = useTheme()
+  const sources = logoSources(resolved)
+
   const content = compact ? (
-    <LogoMark className="h-9 w-auto max-w-[2.5rem] sm:h-10 sm:max-w-[2.75rem]" />
+    <LogoMark
+      src={sources.mark}
+      className="h-9 w-auto max-w-[2.5rem] sm:h-10 sm:max-w-[2.75rem]"
+    />
   ) : (
-    <LogoWordmark />
+    <LogoWordmark src={sources.wordmark} />
   )
 
   const wrapperClass = cn('inline-flex items-center', className)

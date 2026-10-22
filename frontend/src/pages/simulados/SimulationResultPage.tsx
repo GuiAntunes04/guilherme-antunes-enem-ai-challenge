@@ -68,7 +68,7 @@ export function SimulationResultPage() {
         <p className="mb-3 text-sm font-medium uppercase tracking-wider text-accent">
           Resultado
         </p>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-foreground">
           {attempt.score}/{attempt.total} acertos
         </h1>
         <p className="mt-2 text-muted">
@@ -89,7 +89,7 @@ export function SimulationResultPage() {
 
       {questions.length > 0 && (
         <section className="space-y-6">
-          <h2 className="text-lg font-semibold text-white">Revisão das questões</h2>
+          <h2 className="text-lg font-semibold text-foreground">Revisão das questões</h2>
           {questions.map((question) => {
             const answer = answerMap.get(question.id)
             return (

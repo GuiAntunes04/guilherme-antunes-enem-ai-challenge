@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @theme {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Fraunces', ui-serif, Georgia, serif;
@@ -24,6 +26,27 @@
   --color-indigo-soft: #a5b4fc;
 
   --radius-card: 0.875rem;
+}
+
+[data-theme='light'] {
+  --color-surface: #f1f5f9;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #e2e8f0;
+  --color-surface-muted: #cbd5e1;
+
+  --color-border: #cbd5e1;
+  --color-border-subtle: #e2e8f0;
+
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-muted-foreground: #475569;
+
+  --color-accent: #0d9488;
+  --color-accent-strong: #0f766e;
+  --color-accent-soft: #14b8a6;
+  --color-accent-glow: color-mix(in srgb, var(--color-accent) 14%, transparent);
+
+  --color-indigo-soft: #6366f1;
 }
 
 @layer base {

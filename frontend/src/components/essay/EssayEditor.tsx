@@ -11,7 +11,7 @@ export function EssayEditor({ value, onChange, disabled = false }: EssayEditorPr
   return (
     <div className="rounded-xl border border-border-subtle bg-surface-raised/90 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-white">Sua redação</p>
+        <p className="text-sm font-medium text-foreground">Sua redação</p>
         <p className="text-xs text-muted">
           {lineCount} linha{lineCount !== 1 ? 's' : ''} · {charCount} caracteres
         </p>

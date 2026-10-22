@@ -35,7 +35,7 @@ export function EssayImportPanel({ disabled = false, onImport, onApply }: EssayI
     <section className="rounded-xl border border-border-subtle bg-surface-raised/90 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-white">Importar redação</p>
+          <p className="text-sm font-medium text-foreground">Importar redação</p>
           <p className="text-xs text-muted">Foto, PDF, DOCX ou TXT</p>
         </div>
         <button

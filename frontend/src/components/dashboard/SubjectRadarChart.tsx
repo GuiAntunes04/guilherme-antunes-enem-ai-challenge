@@ -7,23 +7,16 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import { useChartPalette } from '../../contexts/ThemeContext'
 import type { SubjectPerformance } from '../../lib/api'
-
-const CHART = {
-  grid: '#243047',
-  tick: '#94a3b8',
-  tickMuted: '#64748b',
-  fill: '#2dd4bf',
-  tooltipBg: '#0f1623',
-  tooltipBorder: '#243047',
-  tooltipText: '#eef2f9',
-} as const
 
 type SubjectRadarChartProps = {
   data: SubjectPerformance[]
 }
 
 export function SubjectRadarChart({ data }: SubjectRadarChartProps) {
+  const chart = useChartPalette()
+
   if (data.length < 2) {
     return (
       <div className="flex h-72 items-center justify-center rounded-[var(--radius-card)] border border-dashed border-border bg-surface/40 px-6 text-center text-sm text-muted">
@@ -43,27 +36,27 @@ export function SubjectRadarChart({ data }: SubjectRadarChartProps) {
     <div className="h-80">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={chartData} margin={{ top: 16, right: 24, bottom: 8, left: 24 }}>
-          <PolarGrid stroke={CHART.grid} />
-          <PolarAngleAxis dataKey="subject" tick={{ fill: CHART.tick, fontSize: 11 }} />
+          <PolarGrid stroke={chart.grid} />
+          <PolarAngleAxis dataKey="subject" tick={{ fill: chart.tick, fontSize: 11 }} />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 100]}
-            tick={{ fill: CHART.tickMuted, fontSize: 10 }}
+            tick={{ fill: chart.tickMuted, fontSize: 10 }}
             tickCount={5}
           />
           <Radar
             name="Taxa de acerto"
             dataKey="accuracy"
-            stroke={CHART.fill}
-            fill={CHART.fill}
+            stroke={chart.fill}
+            fill={chart.fill}
             fillOpacity={0.35}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: CHART.tooltipBg,
-              border: `1px solid ${CHART.tooltipBorder}`,
+              backgroundColor: chart.tooltipBg,
+              border: `1px solid ${chart.tooltipBorder}`,
               borderRadius: '0.5rem',
-              color: CHART.tooltipText,
+              color: chart.tooltipText,
             }}
             formatter={(value, _name, payload) => {
               const numeric = typeof value === 'number' ? value : Number(value ?? 0)

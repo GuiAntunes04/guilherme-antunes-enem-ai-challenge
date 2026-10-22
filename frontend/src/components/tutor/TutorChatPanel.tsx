@@ -183,7 +183,7 @@ export function TutorChatPanel({
     >
       {showPanelHeader && (
         <div className="mb-4">
-          <h2 className="text-base font-semibold text-white">
+          <h2 className="text-base font-semibold text-foreground">
             {title ?? 'Tutor IA — questão atual'}
           </h2>
           {mode === 'simulation' && question && (

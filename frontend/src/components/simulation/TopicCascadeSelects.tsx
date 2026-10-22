@@ -15,7 +15,7 @@ type TopicCascadeSelectsProps = {
 }
 
 const selectClassName =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-white outline-none focus:border-accent disabled:opacity-60'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent disabled:opacity-60'
 
 export function TopicCascadeSelects({
   areas,

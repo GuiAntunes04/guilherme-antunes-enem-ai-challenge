@@ -116,7 +116,7 @@ export function RedacaoPage() {
             <>
               {inProgress.length > 0 && (
                 <section>
-                  <h2 className="text-lg font-semibold text-white">Em andamento</h2>
+                  <h2 className="text-lg font-semibold text-foreground">Em andamento</h2>
                   <div className="mt-4 space-y-3">
                     {inProgress.map((essay) => (
                       <div
@@ -129,7 +129,7 @@ export function RedacaoPage() {
                           className="flex min-w-0 flex-1 items-center justify-between px-5 py-4 text-left"
                         >
                           <div className="min-w-0 pr-4">
-                            <p className="font-medium text-white">{essay.theme}</p>
+                            <p className="font-medium text-foreground">{essay.theme}</p>
                             <p className="mt-1 text-sm text-muted">
                               Iniciada em {new Date(essay.createdAt).toLocaleDateString('pt-BR')}
                               {essay.status === 'evaluating'
@@ -157,7 +157,7 @@ export function RedacaoPage() {
               )}
 
               <section>
-                <h2 className="text-lg font-semibold text-white">Histórico</h2>
+                <h2 className="text-lg font-semibold text-foreground">Histórico</h2>
                 {finished.length === 0 ? (
                   <p className="mt-4 text-sm text-muted">Nenhuma redação corrigida ainda.</p>
                 ) : (
@@ -170,7 +170,7 @@ export function RedacaoPage() {
                         className="flex w-full items-center justify-between rounded-xl border border-border-subtle bg-surface-raised/90 px-5 py-4 text-left transition hover:border-accent/35"
                       >
                         <div className="min-w-0 pr-4">
-                          <p className="font-medium text-white">{essay.theme}</p>
+                          <p className="font-medium text-foreground">{essay.theme}</p>
                           <p className="mt-1 text-sm text-muted">
                             {new Date(essay.finishedAt ?? essay.createdAt).toLocaleDateString(
                               'pt-BR',

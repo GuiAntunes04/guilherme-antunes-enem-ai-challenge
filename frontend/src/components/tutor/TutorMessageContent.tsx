@@ -29,7 +29,11 @@ export function TutorMessageContent({
           ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-4">{children}</ul>,
           ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-4">{children}</ol>,
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+          strong: ({ children }) => (
+            <strong className={`font-semibold ${isUser ? 'text-white' : 'text-foreground'}`}>
+              {children}
+            </strong>
+          ),
           em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children }) => (
             <code

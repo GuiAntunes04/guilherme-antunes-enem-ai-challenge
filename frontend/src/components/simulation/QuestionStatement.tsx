@@ -110,7 +110,7 @@ function prepareStatement(html: string): string {
 }
 
 const inlineFormulaStyles =
-  '[&_p_img]:mx-0.5 [&_p_img]:inline [&_p_img]:max-h-[1.25em] [&_p_img]:align-middle [&_p_img]:rounded-none [&_p_img]:border-0 [&_p_img]:invert [&_p_img]:hue-rotate-180'
+  '[&_p_img]:mx-0.5 [&_p_img]:inline [&_p_img]:max-h-[1.25em] [&_p_img]:align-middle [&_p_img]:rounded-none [&_p_img]:border-0 dark:[&_p_img]:invert dark:[&_p_img]:hue-rotate-180'
 
 const diagramFigureStyles =
   '[&_figure]:my-4 [&_figure_img]:mx-auto [&_figure_img]:block [&_figure_img]:h-auto [&_figure_img]:max-h-[28rem] [&_figure_img]:w-full [&_figure_img]:max-w-xl [&_figure_img]:rounded-lg [&_figure_img]:border [&_figure_img]:border-border'

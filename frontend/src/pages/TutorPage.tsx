@@ -140,7 +140,7 @@ export function TutorPage() {
                       onClick={() => setActiveSessionId(item.id)}
                       className="min-w-0 flex-1 px-3 py-2 text-left"
                     >
-                      <p className="truncate text-sm font-medium text-white">
+                      <p className="truncate text-sm font-medium text-foreground">
                         {item.title ?? 'Conversa'}
                       </p>
                       <p className="mt-1 text-xs text-muted">
