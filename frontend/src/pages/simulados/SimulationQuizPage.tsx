@@ -23,7 +23,19 @@ import {
   submitSimulation,
 } from '../../lib/simulations-api'
 import type { TutorMessage } from '../../types/tutor'
+import { cn } from '../../lib/cn'
 import type { SimulationAttempt, SimulationQuestion } from '../../types/simulation'
+
+const TUTOR_COLLAPSED_KEY = 'enem-prep-tutor-collapsed'
+
+function readTutorCollapsed(): boolean {
+  try {
+    return localStorage.getItem(TUTOR_COLLAPSED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 type QuizLocationState = {
   questions?: SimulationQuestion[]
   attempt?: SimulationAttempt
@@ -85,16 +97,29 @@ export function SimulationQuizPage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const [gabaritoOpen, setGabaritoOpen] = useState(false)
+  const [tutorCollapsed, setTutorCollapsed] = useState(readTutorCollapsed)
 
   useEffect(() => {
     quizStartedAtRef.current = quizStartedAt
   }, [quizStartedAt])
 
   useEffect(() => {
+    try {
+      localStorage.setItem(TUTOR_COLLAPSED_KEY, String(tutorCollapsed))
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [tutorCollapsed])
+
+  useEffect(() => {
     if (loading || questions.length === 0) return
 
-    questionScrollRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })
-  }, [currentIndex, loading, questions.length])
+    if (isDesktop) {
+      questionScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+    } else {
+      questionScrollRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })
+    }
+  }, [currentIndex, loading, questions.length, isDesktop])
 
   useEffect(() => {
     if (!token || !attemptId) return
@@ -381,13 +406,16 @@ export function SimulationQuizPage() {
       attemptId={attemptId}
       question={currentQuestion}
       compact={!isDesktop}
+      docked={isDesktop}
+      collapsed={tutorCollapsed}
+      onToggleCollapsed={isDesktop ? () => setTutorCollapsed((c) => !c) : undefined}
       simulationCache={tutorSimulationCache}
     />
   )
 
-  return (
-    <div ref={questionScrollRef} className="max-w-6xl scroll-mt-4">
-      <div className="mb-6 flex items-center justify-between gap-4">
+  const quizHeader = (
+    <>
+      <div className={cn('flex items-center justify-between gap-4', isDesktop ? 'mb-4 shrink-0' : 'mb-6')}>
         <div>
           <p className="text-sm text-muted">
             Questão {currentIndex + 1} de {questions.length}
@@ -418,64 +446,101 @@ export function SimulationQuizPage() {
         </div>
       </div>
 
-      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-surface-overlay">
+      <div
+        className={cn(
+          'h-1.5 overflow-hidden rounded-full bg-surface-overlay',
+          isDesktop ? 'mb-4 shrink-0' : 'mb-4',
+        )}
+      >
         <div
           className="h-full bg-accent transition-all"
           style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
+    </>
+  )
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div>
-          {error && (
-            <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-              {error}
-            </p>
-          )}
+  const questionBody = (
+    <>
+      {error && (
+        <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
 
-          <QuestionCard
-            question={currentQuestion}
-            selectedOption={answers[currentQuestion.id] ?? null}
-            onSelect={(option) =>
-              setAnswers((prev) => ({ ...prev, [currentQuestion.id]: option }))
-            }
-          />
+      <QuestionCard
+        question={currentQuestion}
+        selectedOption={answers[currentQuestion.id] ?? null}
+        onSelect={(option) =>
+          setAnswers((prev) => ({ ...prev, [currentQuestion.id]: option }))
+        }
+      />
 
-          <div className="mt-6 flex items-center justify-between gap-4">
-            <button
-              type="button"
-              disabled={currentIndex === 0}
-              onClick={() => setCurrentIndex((i) => i - 1)}
-              className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground disabled:opacity-40"
-            >
-              Anterior
-            </button>
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <button
+          type="button"
+          disabled={currentIndex === 0}
+          onClick={() => setCurrentIndex((i) => i - 1)}
+          className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground disabled:opacity-40"
+        >
+          Anterior
+        </button>
 
-            {currentIndex < questions.length - 1 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentIndex((i) => i + 1)}
-                className="rounded-lg bg-surface-overlay px-4 py-2 text-sm text-foreground hover:bg-surface-muted"
-              >
-                Próxima
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={!allAnswered || submitting}
-                onClick={() => void submitAnswers()}
-                className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-white hover:bg-accent disabled:opacity-60"
-              >
-                {submitting ? 'Enviando...' : 'Finalizar simulado'}
-              </button>
-            )}
-          </div>
-
-          {!isDesktop && <div className="mt-6">{tutorPanel}</div>}
-        </div>
-
-        {isDesktop && tutorPanel}
+        {currentIndex < questions.length - 1 ? (
+          <button
+            type="button"
+            onClick={() => setCurrentIndex((i) => i + 1)}
+            className="rounded-lg bg-surface-overlay px-4 py-2 text-sm text-foreground hover:bg-surface-muted"
+          >
+            Próxima
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={!allAnswered || submitting}
+            onClick={() => void submitAnswers()}
+            className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-white hover:bg-accent disabled:opacity-60"
+          >
+            {submitting ? 'Enviando...' : 'Finalizar simulado'}
+          </button>
+        )}
       </div>
+
+      {!isDesktop && <div className="mt-6">{tutorPanel}</div>}
+    </>
+  )
+
+  return (
+    <div
+      className={cn(
+        'mx-auto w-full max-w-6xl',
+        isDesktop && 'flex min-h-0 flex-1 flex-col',
+      )}
+    >
+      {quizHeader}
+
+      {isDesktop ? (
+        <div className="flex min-h-0 flex-1 gap-6">
+          <div
+            ref={questionScrollRef}
+            className="min-w-0 flex-1 overflow-y-auto pr-1 scroll-mt-4"
+          >
+            {questionBody}
+          </div>
+          <div
+            className={cn(
+              'hidden shrink-0 transition-[width] duration-200 ease-out motion-reduce:transition-none lg:block',
+              tutorCollapsed ? 'w-[4.5rem]' : 'w-[340px]',
+            )}
+          >
+            {tutorPanel}
+          </div>
+        </div>
+      ) : (
+        <div ref={questionScrollRef} className="scroll-mt-4">
+          {questionBody}
+        </div>
+      )}
 
       {sidebarState && (
         <SimulationGabaritoDrawer

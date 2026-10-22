@@ -62,16 +62,22 @@ function DashboardLayoutContent() {
 
   return (
     <LayoutSidebarProvider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
-    <div className="relative min-h-dvh overflow-x-hidden bg-surface text-foreground">
+    <div
+      className={cn(
+        'relative overflow-x-hidden bg-surface text-foreground',
+        quizSidebar ? 'h-dvh overflow-hidden' : 'min-h-dvh',
+      )}
+    >
       <div
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,var(--color-accent-glow),transparent_50%)]"
         aria-hidden
       />
 
-      <div className="relative flex min-h-dvh w-full">
+      <div className={cn('relative flex w-full', quizSidebar ? 'h-dvh' : 'min-h-dvh')}>
         <aside
           className={cn(
-            'hidden shrink-0 border-r border-border-subtle md:sticky md:top-0 md:flex md:h-dvh md:max-h-dvh md:flex-col md:bg-surface-raised/40 md:backdrop-blur-sm',
+            'hidden shrink-0 border-r border-border-subtle md:flex md:h-dvh md:max-h-dvh md:flex-col md:overflow-hidden md:bg-surface-raised/40 md:backdrop-blur-sm',
+            !quizSidebar && 'md:sticky md:top-0',
             'transition-[width] duration-200 ease-out motion-reduce:transition-none',
             sidebarNarrow ? 'w-[4.5rem]' : 'w-64',
           )}
@@ -122,7 +128,8 @@ function DashboardLayoutContent() {
 
           <nav
             className={cn(
-              'shrink-0 space-y-0.5',
+              'space-y-0.5',
+              quizSidebar ? 'min-h-0 flex-1 overflow-y-auto' : 'shrink-0',
               sidebarNarrow ? 'px-2 py-2' : quizSidebar ? 'px-3 py-2' : 'p-3',
             )}
           >
@@ -179,7 +186,7 @@ function DashboardLayoutContent() {
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className={cn('flex min-w-0 flex-1 flex-col', quizSidebar && 'min-h-0 overflow-hidden')}>
           <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
             <BrandMark to="/" compact />
             <Button
@@ -222,7 +229,14 @@ function DashboardLayoutContent() {
             </div>
           )}
 
-          <main className="min-w-0 flex-1 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8">
+          <main
+            className={cn(
+              'min-w-0 flex-1 px-3 sm:px-6 lg:px-8',
+              quizSidebar
+                ? 'flex min-h-0 flex-col overflow-hidden py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-5'
+                : 'py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:py-8',
+            )}
+          >
             <Outlet />
           </main>
         </div>

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { ChevronsLeft, ChevronsRight, MessageCircle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { cn } from '../../lib/cn'
 import {
   fetchTutorMessages,
   getOrCreateSimulationTutorSession,
@@ -22,6 +24,9 @@ type TutorChatPanelProps = {
   question?: SimulationQuestion
   title?: string
   compact?: boolean
+  docked?: boolean
+  collapsed?: boolean
+  onToggleCollapsed?: () => void
   simulationCache?: MutableRefObject<Map<string, SimulationTutorCacheEntry>>
   onSessionUpdated?: (session: TutorSession) => void
 }
@@ -37,6 +42,9 @@ export function TutorChatPanel({
   question,
   title,
   compact = false,
+  docked = false,
+  collapsed = false,
+  onToggleCollapsed,
   simulationCache,
   onSessionUpdated,
 }: TutorChatPanelProps) {
@@ -174,50 +182,94 @@ export function TutorChatPanel({
   }
 
   const showPanelHeader = mode === 'simulation' || Boolean(title)
+  const canCollapse = mode === 'simulation' && docked && Boolean(onToggleCollapsed)
+  const panelCollapsed = canCollapse && collapsed
+  const ToggleIcon = panelCollapsed ? ChevronsLeft : ChevronsRight
 
   return (
     <aside
-      className={`flex flex-col rounded-xl border border-border-subtle bg-surface-raised/90 ${
-        compact ? 'p-4' : 'p-5'
-      } ${mode === 'simulation' ? 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-6rem)]' : 'h-full min-h-[420px]'}`}
+      className={cn(
+        'flex flex-col rounded-xl border border-border-subtle bg-surface-raised/90',
+        panelCollapsed ? 'items-center gap-2 px-2 py-3' : compact ? 'p-4' : 'p-5',
+        docked && mode === 'simulation' && 'h-full min-h-0',
+        !docked && mode === 'simulation' && 'lg:sticky lg:top-6 lg:max-h-[calc(100vh-6rem)]',
+        mode !== 'simulation' && 'h-full min-h-[420px]',
+      )}
     >
-      {showPanelHeader && (
-        <div className="mb-4">
-          <h2 className="text-base font-semibold text-foreground">
-            {title ?? 'Tutor IA — questão atual'}
-          </h2>
-          {mode === 'simulation' && question && (
-            <p className="mt-1 text-xs text-muted">
-              {question.subjectName ?? 'Questão'} — ENEM {question.year}
+      {panelCollapsed ? (
+        <>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="rounded-lg p-2 text-muted hover:bg-surface-overlay hover:text-foreground"
+            aria-expanded={false}
+            aria-label="Expandir tutor"
+          >
+            <ToggleIcon className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+          </button>
+          <MessageCircle
+            className="h-5 w-5 shrink-0 text-accent"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <span className="sr-only">Tutor IA — questão atual</span>
+        </>
+      ) : (
+        <>
+          {showPanelHeader && (
+            <div className="mb-4 flex shrink-0 items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-foreground">
+                  {title ?? 'Tutor IA — questão atual'}
+                </h2>
+                {mode === 'simulation' && question && (
+                  <p className="mt-1 text-xs text-muted">
+                    {question.subjectName ?? 'Questão'} — ENEM {question.year}
+                  </p>
+                )}
+              </div>
+              {canCollapse && (
+                <button
+                  type="button"
+                  onClick={onToggleCollapsed}
+                  className="shrink-0 rounded-lg p-2 text-muted hover:bg-surface-overlay hover:text-foreground"
+                  aria-expanded
+                  aria-label="Recolher tutor"
+                >
+                  <ToggleIcon className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="mb-4 min-h-0 flex-1 overflow-y-auto pr-1">
+            {loading ? (
+              <p className="text-sm text-muted">Carregando conversa...</p>
+            ) : (
+              <TutorMessageList messages={messages} sending={sending} mode={mode} />
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {error && (
+            <p className="mb-3 shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              {error}
             </p>
           )}
-        </div>
+
+          <div className="shrink-0">
+            <TutorComposer
+              disabled={loading || !sessionId}
+              placeholder={
+                mode === 'simulation'
+                  ? 'Ex.: Explique o enunciado ou o conceito...'
+                  : 'Digite sua dúvida sobre ENEM...'
+              }
+              onSend={handleSend}
+            />
+          </div>
+        </>
       )}
-
-      <div className="mb-4 flex-1 overflow-y-auto pr-1">
-        {loading ? (
-          <p className="text-sm text-muted">Carregando conversa...</p>
-        ) : (
-          <TutorMessageList messages={messages} sending={sending} mode={mode} />
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {error && (
-        <p className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-          {error}
-        </p>
-      )}
-
-      <TutorComposer
-        disabled={loading || !sessionId}
-        placeholder={
-          mode === 'simulation'
-            ? 'Ex.: Explique o enunciado ou o conceito...'
-            : 'Digite sua dúvida sobre ENEM...'
-        }
-        onSend={handleSend}
-      />
     </aside>
   )
 }
