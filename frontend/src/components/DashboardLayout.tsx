@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { SimulationAnswerSheet } from './simulation/SimulationAnswerSheet'
 import { navItems } from '../config/navigation'
 import { useAuth } from '../contexts/AuthContext'
+import { LayoutSidebarProvider } from '../contexts/LayoutSidebarContext'
 import {
   SimulationQuizProvider,
   useSimulationQuizSidebarState,
@@ -50,7 +50,7 @@ function DashboardLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
   const quizSidebar = useSimulationQuizSidebarState()
 
-  const sidebarNarrow = sidebarCollapsed && !quizSidebar
+  const sidebarNarrow = sidebarCollapsed
 
   useEffect(() => {
     try {
@@ -61,6 +61,7 @@ function DashboardLayoutContent() {
   }, [sidebarCollapsed])
 
   return (
+    <LayoutSidebarProvider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
     <div className="relative min-h-dvh overflow-x-hidden bg-surface text-foreground">
       <div
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_0%_0%,var(--color-accent-glow),transparent_50%)]"
@@ -89,7 +90,7 @@ function DashboardLayoutContent() {
               )}
             >
               <BrandMark to="/" compact={sidebarNarrow} className={sidebarNarrow ? 'justify-center' : undefined} />
-              {!quizSidebar && !sidebarNarrow && (
+              {!sidebarNarrow && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -102,7 +103,7 @@ function DashboardLayoutContent() {
                 </Button>
               )}
             </div>
-            {!quizSidebar && sidebarNarrow && (
+            {sidebarNarrow && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -154,22 +155,9 @@ function DashboardLayoutContent() {
             })}
           </nav>
 
-          {quizSidebar && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <SimulationAnswerSheet
-                total={quizSidebar.total}
-                currentIndex={quizSidebar.currentIndex}
-                answers={quizSidebar.answers}
-                questionIds={quizSidebar.questionIds}
-                goToQuestion={quizSidebar.goToQuestion}
-              />
-            </div>
-          )}
-
           <div
             className={cn(
-              'shrink-0 space-y-2 border-t border-border-subtle',
-              quizSidebar ? 'p-3' : 'mt-auto p-3',
+              'mt-auto shrink-0 space-y-2 border-t border-border-subtle p-3',
               sidebarNarrow && 'px-2',
             )}
           >
@@ -227,22 +215,6 @@ function DashboardLayoutContent() {
                 })}
               </nav>
 
-              {quizSidebar && (
-                <div className="mt-4 border-t border-border-subtle pt-4">
-                  <SimulationAnswerSheet
-                    compact
-                    total={quizSidebar.total}
-                    currentIndex={quizSidebar.currentIndex}
-                    answers={quizSidebar.answers}
-                    questionIds={quizSidebar.questionIds}
-                    goToQuestion={(index) => {
-                      quizSidebar.goToQuestion(index)
-                      setMenuOpen(false)
-                    }}
-                  />
-                </div>
-              )}
-
               <ThemeToggle className="mt-4" />
               <Button variant="secondary" fullWidth className="mt-3" onClick={() => signOut()}>
                 Sair
@@ -256,6 +228,7 @@ function DashboardLayoutContent() {
         </div>
       </div>
     </div>
+    </LayoutSidebarProvider>
   )
 }
 

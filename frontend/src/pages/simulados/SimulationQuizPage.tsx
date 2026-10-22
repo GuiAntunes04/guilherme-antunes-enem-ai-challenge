@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { type BlockerFunction, useBlocker } from 'react-router'
+import { LayoutGrid } from 'lucide-react'
+import { ConfirmLeaveSimulationDialog } from '../../components/simulation/ConfirmLeaveSimulationDialog'
+import { SimulationGabaritoDrawer } from '../../components/simulation/SimulationGabaritoDrawer'
 import { QuestionCard } from '../../components/simulation/QuestionCard'
 import {
   formatTime,
@@ -8,7 +12,10 @@ import {
 } from '../../components/simulation/SimulationTimer'
 import { TutorChatPanel } from '../../components/tutor/TutorChatPanel'
 import { useAuth } from '../../contexts/AuthContext'
-import { useSimulationQuizSidebar } from '../../contexts/SimulationQuizContext'
+import {
+  useSimulationLeaveGuard,
+  useSimulationQuizSidebar,
+} from '../../contexts/SimulationQuizContext'
 import {
   beginSimulationQuiz,
   fetchSimulation,
@@ -73,7 +80,11 @@ export function SimulationQuizPage() {
     new Map<string, { sessionId: string; messages: TutorMessage[] }>(),
   )
   const questionScrollRef = useRef<HTMLDivElement>(null)
+  const allowLeaveRef = useRef(false)
+  const pendingLeaveRef = useRef<'blocker' | 'manual' | null>(null)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const [gabaritoOpen, setGabaritoOpen] = useState(false)
 
   useEffect(() => {
     quizStartedAtRef.current = quizStartedAt
@@ -234,6 +245,75 @@ export function SimulationQuizPage() {
 
   useSimulationQuizSidebar(sidebarState)
 
+  const guardActive = !loading && questions.length > 0 && !submitting
+  useSimulationLeaveGuard(guardActive)
+
+  const shouldBlockNavigation = useCallback<BlockerFunction>(
+    ({ currentLocation, nextLocation }) => {
+      if (allowLeaveRef.current || !guardActive || !attemptId) return false
+
+      const quizPath = `/simulados/${attemptId}`
+      const onQuizPage =
+        currentLocation.pathname === quizPath ||
+        currentLocation.pathname === `${quizPath}/`
+
+      if (!onQuizPage) return false
+      if (nextLocation.pathname.startsWith(`${quizPath}/resultado`)) return false
+
+      return nextLocation.pathname !== currentLocation.pathname
+    },
+    [guardActive, attemptId],
+  )
+
+  const blocker = useBlocker(shouldBlockNavigation)
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      pendingLeaveRef.current = 'blocker'
+      setLeaveDialogOpen(true)
+    }
+  }, [blocker.state])
+
+  useEffect(() => {
+    if (!guardActive) return
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+    }
+
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [guardActive])
+
+  const requestLeaveSimulado = useCallback(() => {
+    pendingLeaveRef.current = 'manual'
+    setLeaveDialogOpen(true)
+  }, [])
+
+  const stayOnSimulado = useCallback(() => {
+    setLeaveDialogOpen(false)
+    pendingLeaveRef.current = null
+    if (blocker.state === 'blocked') {
+      blocker.reset()
+    }
+  }, [blocker])
+
+  const confirmLeaveSimulado = useCallback(() => {
+    setLeaveDialogOpen(false)
+    const pending = pendingLeaveRef.current
+    pendingLeaveRef.current = null
+
+    if (pending === 'manual') {
+      allowLeaveRef.current = true
+      navigate('/simulados')
+      return
+    }
+
+    if (blocker.state === 'blocked') {
+      blocker.proceed()
+    }
+  }, [blocker, navigate])
+
   const currentQuestion = questions[currentIndex]
   const answeredCount = Object.keys(answers).length
   const allAnswered = questions.length > 0 && answeredCount === questions.length
@@ -316,11 +396,25 @@ export function SimulationQuizPage() {
             {answeredCount} respondida{answeredCount !== 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          {sidebarState && (
+            <button
+              type="button"
+              onClick={() => setGabaritoOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-overlay px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+              Gabarito
+            </button>
+          )}
           {timerPanel}
-          <Link to="/simulados" className="text-sm text-muted hover:text-foreground">
+          <button
+            type="button"
+            onClick={requestLeaveSimulado}
+            className="text-sm text-muted hover:text-foreground"
+          >
             Cancelar
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -382,6 +476,24 @@ export function SimulationQuizPage() {
 
         {isDesktop && tutorPanel}
       </div>
+
+      {sidebarState && (
+        <SimulationGabaritoDrawer
+          open={gabaritoOpen}
+          onClose={() => setGabaritoOpen(false)}
+          total={sidebarState.total}
+          currentIndex={sidebarState.currentIndex}
+          answers={sidebarState.answers}
+          questionIds={sidebarState.questionIds}
+          goToQuestion={sidebarState.goToQuestion}
+        />
+      )}
+
+      <ConfirmLeaveSimulationDialog
+        open={leaveDialogOpen}
+        onStay={stayOnSimulado}
+        onLeave={confirmLeaveSimulado}
+      />
     </div>
   )
 }

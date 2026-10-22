@@ -18,19 +18,24 @@ export type SimulationQuizSidebarState = {
 type SimulationQuizContextValue = {
   sidebar: SimulationQuizSidebarState | null
   setSidebar: (state: SimulationQuizSidebarState | null) => void
+  leaveGuardActive: boolean
+  setLeaveGuardActive: (active: boolean) => void
 }
 
 const SimulationQuizContext = createContext<SimulationQuizContextValue | null>(null)
 
 export function SimulationQuizProvider({ children }: { children: ReactNode }) {
   const [sidebar, setSidebar] = useState<SimulationQuizSidebarState | null>(null)
+  const [leaveGuardActive, setLeaveGuardActive] = useState(false)
 
   const value = useMemo(
     () => ({
       sidebar,
       setSidebar,
+      leaveGuardActive,
+      setLeaveGuardActive,
     }),
-    [sidebar],
+    [sidebar, leaveGuardActive],
   )
 
   return (
@@ -57,4 +62,13 @@ export function useSimulationQuizSidebar(state: SimulationQuizSidebarState | nul
 
 export function useSimulationQuizSidebarState(): SimulationQuizSidebarState | null {
   return useSimulationQuizContext().sidebar
+}
+
+export function useSimulationLeaveGuard(active: boolean): void {
+  const { setLeaveGuardActive } = useSimulationQuizContext()
+
+  useEffect(() => {
+    setLeaveGuardActive(active)
+    return () => setLeaveGuardActive(false)
+  }, [active, setLeaveGuardActive])
 }
