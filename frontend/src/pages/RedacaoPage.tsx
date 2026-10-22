@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EssayWorkbench } from '../components/essay/EssayWorkbench'
 import { Alert } from '../components/ui/Alert'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Button } from '../components/ui/Button'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
@@ -26,6 +27,7 @@ export function RedacaoPage() {
   const [loadingList, setLoadingList] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   const inProgress = useMemo(() => essays.filter(isEssayInProgress), [essays])
   const finished = useMemo(() => essays.filter((essay) => essay.status === 'done'), [essays])
@@ -73,11 +75,6 @@ export function RedacaoPage() {
 
   async function handleDeleteEssay(targetId: string) {
     if (!token || deletingId) return
-
-    const confirmed = window.confirm(
-      'Excluir esta redação? Esta ação não pode ser desfeita.',
-    )
-    if (!confirmed) return
 
     setDeletingId(targetId)
     setError(null)
@@ -145,7 +142,7 @@ export function RedacaoPage() {
                           type="button"
                           aria-label="Excluir redação em andamento"
                           disabled={deletingId === essay.id || essay.status === 'evaluating'}
-                          onClick={() => void handleDeleteEssay(essay.id)}
+                          onClick={() => setDeleteTargetId(essay.id)}
                           className="shrink-0 border-l border-amber-500/20 px-4 text-sm text-muted transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
                         >
                           {deletingId === essay.id ? '...' : 'Excluir'}
@@ -217,7 +214,7 @@ export function RedacaoPage() {
               <Button
                 variant="danger"
                 disabled={deletingId === essayId || openEssay.status === 'evaluating'}
-                onClick={() => void handleDeleteEssay(essayId)}
+                onClick={() => essayId && setDeleteTargetId(essayId)}
               >
                 {deletingId === essayId ? 'Excluindo...' : 'Excluir redação'}
               </Button>
@@ -228,6 +225,19 @@ export function RedacaoPage() {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="Excluir redação?"
+        description="A redação será removida permanentemente. Esta ação não pode ser desfeita."
+        confirmLabel={deletingId ? 'Excluindo...' : 'Excluir redação'}
+        confirmDisabled={deletingId !== null}
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          if (deleteTargetId) {
+            void handleDeleteEssay(deleteTargetId).finally(() => setDeleteTargetId(null))
+          }
+        }}
+      />
     </div>
   )
 }

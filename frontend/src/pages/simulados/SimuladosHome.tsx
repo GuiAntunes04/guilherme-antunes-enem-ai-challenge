@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TopicCascadeSelects } from '../../components/simulation/TopicCascadeSelects'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -84,6 +85,7 @@ export function SimuladosHome() {
   })
   const [starting, setStarting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const isSubjectPractice = mode === 'subject_practice'
@@ -267,11 +269,6 @@ export function SimuladosHome() {
 
   async function handleDeleteInProgress(attemptId: string) {
     if (!token || deletingId) return
-
-    const confirmed = window.confirm(
-      'Excluir este simulado em andamento? O progresso será perdido.',
-    )
-    if (!confirmed) return
 
     setDeletingId(attemptId)
     setError(null)
@@ -597,7 +594,7 @@ export function SimuladosHome() {
                   type="button"
                   aria-label="Excluir simulado em andamento"
                   disabled={deletingId === item.id}
-                  onClick={() => void handleDeleteInProgress(item.id)}
+                  onClick={() => setDeleteTargetId(item.id)}
                   className="shrink-0 border-l border-amber-500/20 px-4 text-sm text-muted transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
                 >
                   {deletingId === item.id ? '...' : 'Excluir'}
@@ -641,6 +638,20 @@ export function SimuladosHome() {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="Excluir simulado?"
+        description="O simulado em andamento será removido e todo o progresso será perdido. Esta ação não pode ser desfeita."
+        confirmLabel={deletingId ? 'Excluindo...' : 'Excluir simulado'}
+        confirmDisabled={deletingId !== null}
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          if (deleteTargetId) {
+            void handleDeleteInProgress(deleteTargetId).finally(() => setDeleteTargetId(null))
+          }
+        }}
+      />
     </div>
   )
 }
