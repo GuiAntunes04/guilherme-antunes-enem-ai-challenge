@@ -65,7 +65,7 @@ function DashboardLayoutContent() {
     <div
       className={cn(
         'relative overflow-x-hidden bg-surface text-foreground',
-        quizSidebar ? 'h-dvh overflow-hidden' : 'min-h-dvh',
+        quizSidebar ? 'min-h-dvh lg:h-dvh lg:overflow-hidden' : 'min-h-dvh',
       )}
     >
       <div
@@ -73,7 +73,7 @@ function DashboardLayoutContent() {
         aria-hidden
       />
 
-      <div className={cn('relative flex w-full', quizSidebar ? 'h-dvh' : 'min-h-dvh')}>
+      <div className={cn('relative flex w-full', quizSidebar ? 'min-h-dvh lg:h-dvh' : 'min-h-dvh')}>
         <aside
           className={cn(
             'hidden shrink-0 border-r border-border-subtle md:flex md:h-dvh md:max-h-dvh md:flex-col md:overflow-hidden md:bg-surface-raised/40 md:backdrop-blur-sm',
@@ -186,7 +186,12 @@ function DashboardLayoutContent() {
           </div>
         </aside>
 
-        <div className={cn('flex min-w-0 flex-1 flex-col', quizSidebar && 'min-h-0 overflow-hidden')}>
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 flex-col',
+            quizSidebar && 'lg:min-h-0 lg:overflow-hidden',
+          )}
+        >
           <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
             <BrandMark to="/" compact />
             <Button
@@ -233,7 +238,7 @@ function DashboardLayoutContent() {
             className={cn(
               'min-w-0 flex-1 px-3 sm:px-6 lg:px-8',
               quizSidebar
-                ? 'flex min-h-0 flex-col overflow-hidden py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-5'
+                ? 'py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-5 lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden'
                 : 'py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:py-8',
             )}
           >

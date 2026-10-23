@@ -117,7 +117,7 @@ export function SimulationQuizPage() {
     if (isDesktop) {
       questionScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
     } else {
-      questionScrollRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })
+      window.scrollTo({ top: 0, behavior: 'auto' })
     }
   }, [currentIndex, loading, questions.length, isDesktop])
 
