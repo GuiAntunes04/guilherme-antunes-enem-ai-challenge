@@ -13,7 +13,7 @@ import { cn } from '../lib/cn'
 const quickLinks = navItems.filter((item) => item.path !== '/')
 
 export function HomePage() {
-  const { profile, user, session } = useAuth()
+  const { profile, session } = useAuth()
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
 
@@ -56,19 +56,7 @@ export function HomePage() {
       <PageHeader
         eyebrow="Área do estudante"
         title={`Olá, ${profile?.name ?? 'estudante'}!`}
-        description={
-          <>
-            Bem-vindo à sua plataforma de estudos
-            {user?.email ? (
-              <>
-                , <span className="text-muted-foreground">{user.email}</span>
-              </>
-            ) : (
-              ''
-            )}
-            . Acompanhe seu progresso e acesse as ferramentas abaixo.
-          </>
-        }
+        description="Acompanhe seu progresso."
       />
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">

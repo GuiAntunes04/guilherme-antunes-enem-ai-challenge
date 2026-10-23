@@ -46,7 +46,7 @@ function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
 
 /** Fixed sidebar + scrollable main (Dashboard, Simulados, Redação, active quiz). */
 function isScrollLockedRoute(pathname: string): boolean {
-  if (pathname === '/' || pathname === '/redacao') return true
+  if (pathname === '/' || pathname === '/redacao' || pathname === '/tutor') return true
   return pathname.startsWith('/simulados')
 }
 
