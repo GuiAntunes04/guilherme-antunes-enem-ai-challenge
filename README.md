@@ -59,9 +59,7 @@ Capturas da aplicação em produção. Arquivos em [`docs/screenshots/`](docs/sc
 
 ### Dashboard
 
-<video src="docs/screenshots/dashboard.mp4" controls width="100%">
-  <a href="docs/screenshots/dashboard.mp4">Demo do dashboard</a>
-</video>
+![Estatísticas, radar por matéria e evolução nos simulados](docs/screenshots/dashboard.gif)
 
 ### Simulados
 
