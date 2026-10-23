@@ -40,12 +40,6 @@ export function LoginPage() {
       marketing={{
         headline: 'Estude para o ENEM com simulados, tutor IA e redação',
         subheadline: 'Sua preparação em um só lugar.',
-        body: (
-          <>
-            Faça simulados com questões reais, tire dúvidas com o tutor inteligente e receba
-            correção de redação nas cinco competências do exame.
-          </>
-        ),
         bullets: [
           'Simulados por matéria ou prova completa',
           'Tutor IA contextualizado nas questões',

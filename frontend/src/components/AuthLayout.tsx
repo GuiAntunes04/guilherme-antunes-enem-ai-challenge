@@ -10,7 +10,7 @@ export type AuthMarketing = {
   eyebrow?: string
   headline: string
   subheadline?: string
-  body: ReactNode
+  body?: ReactNode
   bullets?: string[]
 }
 
@@ -128,14 +128,16 @@ export function AuthLayout({
                 {marketing.subheadline}
               </p>
             )}
-            <div
-              className={cn(
-                'mt-3 text-sm leading-relaxed sm:mt-4 sm:text-base',
-                isLight ? 'text-muted-foreground' : 'text-white/85',
-              )}
-            >
-              {marketing.body}
-            </div>
+            {marketing.body && (
+              <div
+                className={cn(
+                  'mt-3 text-sm leading-relaxed sm:mt-4 sm:text-base',
+                  isLight ? 'text-muted-foreground' : 'text-white/85',
+                )}
+              >
+                {marketing.body}
+              </div>
+            )}
             {marketing.bullets && marketing.bullets.length > 0 && (
               <ul className="mt-4 space-y-2 sm:mt-6 sm:space-y-2.5">
                 {marketing.bullets.map((item) => (

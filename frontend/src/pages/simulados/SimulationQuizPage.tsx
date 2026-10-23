@@ -512,8 +512,6 @@ export function SimulationQuizPage() {
           </button>
         )}
       </div>
-
-      {!isDesktop && <div className="mt-6">{tutorPanel}</div>}
     </>
   )
 
@@ -544,9 +542,12 @@ export function SimulationQuizPage() {
           </div>
         </div>
       ) : (
-        <div ref={questionScrollRef} className="scroll-mt-4">
-          {questionBody}
-        </div>
+        <>
+          <div ref={questionScrollRef} className="scroll-mt-4">
+            {questionBody}
+          </div>
+          <div className="mt-6">{tutorPanel}</div>
+        </>
       )}
 
       {sidebarState && (

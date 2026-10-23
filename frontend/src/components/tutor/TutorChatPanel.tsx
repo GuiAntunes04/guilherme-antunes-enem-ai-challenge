@@ -57,7 +57,8 @@ export function TutorChatPanel({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const simulationQuestionIdRef = useRef<string | undefined>(undefined)
+  const stickToBottomRef = useRef(false)
 
   useEffect(() => {
     setSessionId(externalSessionId ?? null)
@@ -139,12 +140,29 @@ export function TutorChatPanel({
     const container = messagesScrollRef.current
     if (!container) return
 
-    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
-  }, [messages, sending])
+    if (mode === 'simulation') {
+      const questionId = question?.id
+      if (questionId !== simulationQuestionIdRef.current) {
+        simulationQuestionIdRef.current = questionId
+        stickToBottomRef.current = false
+        container.scrollTop = 0
+        return
+      }
+      if (!stickToBottomRef.current) {
+        return
+      }
+    }
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: sending ? 'smooth' : 'auto',
+    })
+  }, [messages, sending, mode, question?.id])
 
   async function handleSend(content: string) {
     if (!token || !sessionId) return
 
+    stickToBottomRef.current = true
     setSending(true)
     setError(null)
 
@@ -260,7 +278,6 @@ export function TutorChatPanel({
             ) : (
               <TutorMessageList messages={messages} sending={sending} mode={mode} />
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {error && (
