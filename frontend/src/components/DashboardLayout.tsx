@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { navItems } from '../config/navigation'
 import { useAuth } from '../contexts/AuthContext'
 import { LayoutSidebarProvider } from '../contexts/LayoutSidebarContext'
@@ -44,11 +44,19 @@ function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
   return <Icon className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
 }
 
+/** Fixed sidebar + scrollable main (Dashboard, Simulados, Redação, active quiz). */
+function isScrollLockedRoute(pathname: string): boolean {
+  if (pathname === '/' || pathname === '/redacao') return true
+  return pathname.startsWith('/simulados')
+}
+
 function DashboardLayoutContent() {
   const { profile, signOut } = useAuth()
+  const { pathname } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
   const quizSidebar = useSimulationQuizSidebarState()
+  const scrollLockedShell = Boolean(quizSidebar) || isScrollLockedRoute(pathname)
 
   const sidebarNarrow = sidebarCollapsed
 
@@ -65,7 +73,7 @@ function DashboardLayoutContent() {
     <div
       className={cn(
         'relative overflow-x-hidden bg-surface text-foreground',
-        quizSidebar ? 'min-h-dvh lg:h-dvh lg:overflow-hidden' : 'min-h-dvh',
+        scrollLockedShell ? 'min-h-dvh lg:h-dvh lg:overflow-hidden' : 'min-h-dvh',
       )}
     >
       <div
@@ -73,11 +81,16 @@ function DashboardLayoutContent() {
         aria-hidden
       />
 
-      <div className={cn('relative flex w-full', quizSidebar ? 'min-h-dvh lg:h-dvh' : 'min-h-dvh')}>
+      <div
+        className={cn(
+          'relative flex w-full',
+          scrollLockedShell ? 'min-h-dvh lg:h-dvh' : 'min-h-dvh',
+        )}
+      >
         <aside
           className={cn(
             'hidden shrink-0 border-r border-border-subtle md:flex md:h-dvh md:max-h-dvh md:flex-col md:overflow-hidden md:bg-surface-raised/40 md:backdrop-blur-sm',
-            !quizSidebar && 'md:sticky md:top-0',
+            !scrollLockedShell && 'md:sticky md:top-0',
             'transition-[width] duration-200 ease-out motion-reduce:transition-none',
             sidebarNarrow ? 'w-[4.5rem]' : 'w-64',
           )}
@@ -189,7 +202,7 @@ function DashboardLayoutContent() {
         <div
           className={cn(
             'flex min-w-0 flex-1 flex-col',
-            quizSidebar && 'lg:min-h-0 lg:overflow-hidden',
+            scrollLockedShell && 'lg:min-h-0 lg:overflow-hidden',
           )}
         >
           <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
@@ -237,9 +250,14 @@ function DashboardLayoutContent() {
           <main
             className={cn(
               'min-w-0 flex-1 px-3 sm:px-6 lg:px-8',
+              sidebarCollapsed &&
+                'md:[&>*]:mx-0 md:[&>*]:w-full md:[&>*]:max-w-none',
+              scrollLockedShell && 'lg:min-h-0',
               quizSidebar
-                ? 'py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-5 lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden'
-                : 'py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:py-8',
+                ? 'py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-5 lg:flex lg:flex-col lg:overflow-hidden'
+                : scrollLockedShell
+                  ? 'py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:py-8 lg:overflow-y-auto'
+                  : 'py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:py-8',
             )}
           >
             <Outlet />
