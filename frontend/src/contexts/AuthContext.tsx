@@ -10,6 +10,7 @@ import {
 import type { Session, User } from '@supabase/supabase-js'
 import { translateAuthError } from '../lib/auth-errors'
 import { fetchMe, type Profile } from '../lib/api'
+import { setRememberAuth } from '../lib/auth-storage'
 import { supabase } from '../lib/supabase'
 
 type AuthContextValue = {
@@ -17,7 +18,11 @@ type AuthContextValue = {
   session: Session | null
   profile: Profile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signIn: (
+    email: string,
+    password: string,
+    rememberMe?: boolean,
+  ) => Promise<{ error: string | null }>
   signUp: (
     name: string,
     email: string,
@@ -94,13 +99,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [loadProfile])
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string, rememberMe = false) => {
+    setRememberAuth(rememberMe)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error: translateAuthError(error?.message) }
   }, [])
 
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
+      setRememberAuth(false)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,

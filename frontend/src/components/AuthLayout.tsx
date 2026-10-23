@@ -52,8 +52,7 @@ export function AuthLayout({
         )}
       >
         <header className="flex shrink-0 items-center justify-between gap-3 sm:gap-4">
-          <BrandMark to="/login" compact className="sm:hidden" />
-          <BrandMark to="/login" className="hidden sm:inline-flex" />
+          <BrandMark to="/login" className="max-w-[9rem] sm:max-w-none" />
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <ThemeToggle
               compact

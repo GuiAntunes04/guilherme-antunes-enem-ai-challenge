@@ -4,6 +4,7 @@ import { AuthLayout } from '../components/AuthLayout'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input, PasswordInput } from '../components/ui/Input'
+import { readRememberAuth } from '../lib/auth-storage'
 import { useAuth } from '../contexts/AuthContext'
 
 export function LoginPage() {
@@ -12,6 +13,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [rememberMe, setRememberMe] = useState(readRememberAuth)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent) {
@@ -19,7 +21,7 @@ export function LoginPage() {
     setError(null)
     setSubmitting(true)
 
-    const { error: signInError } = await signIn(email, password)
+    const { error: signInError } = await signIn(email, password, rememberMe)
 
     if (signInError) {
       setError(signInError)
@@ -89,7 +91,17 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 shrink-0 rounded border-neutral-300 bg-white text-accent-strong accent-accent-strong focus:ring-2 focus:ring-accent/25"
+            />
+            Manter conectado neste dispositivo
+          </label>
           <Link
             to="/forgot-password"
             className="text-sm font-medium text-accent-strong hover:underline"
