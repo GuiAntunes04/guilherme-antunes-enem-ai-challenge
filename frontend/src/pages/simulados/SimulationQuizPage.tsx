@@ -24,6 +24,7 @@ import {
 } from '../../lib/simulations-api'
 import type { TutorMessage } from '../../types/tutor'
 import { cn } from '../../lib/cn'
+import { preventTouchFocus } from '../../lib/prevent-touch-focus'
 import type { SimulationAttempt, SimulationQuestion } from '../../types/simulation'
 
 const TUTOR_COLLAPSED_KEY = 'enem-prep-tutor-collapsed'
@@ -114,10 +115,13 @@ export function SimulationQuizPage() {
   useEffect(() => {
     if (loading || questions.length === 0) return
 
+    const anchor = questionScrollRef.current
+    if (!anchor) return
+
     if (isDesktop) {
-      questionScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+      anchor.scrollTo({ top: 0, behavior: 'auto' })
     } else {
-      window.scrollTo({ top: 0, behavior: 'auto' })
+      anchor.scrollIntoView({ block: 'start', behavior: 'auto' })
     }
   }, [currentIndex, loading, questions.length, isDesktop])
 
@@ -480,6 +484,7 @@ export function SimulationQuizPage() {
         <button
           type="button"
           disabled={currentIndex === 0}
+          onPointerDown={preventTouchFocus}
           onClick={() => setCurrentIndex((i) => i - 1)}
           className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground disabled:opacity-40"
         >
@@ -489,6 +494,7 @@ export function SimulationQuizPage() {
         {currentIndex < questions.length - 1 ? (
           <button
             type="button"
+            onPointerDown={preventTouchFocus}
             onClick={() => setCurrentIndex((i) => i + 1)}
             className="rounded-lg bg-surface-overlay px-4 py-2 text-sm text-foreground hover:bg-surface-muted"
           >
@@ -498,6 +504,7 @@ export function SimulationQuizPage() {
           <button
             type="button"
             disabled={!allAnswered || submitting}
+            onPointerDown={preventTouchFocus}
             onClick={() => void submitAnswers()}
             className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-white hover:bg-accent disabled:opacity-60"
           >

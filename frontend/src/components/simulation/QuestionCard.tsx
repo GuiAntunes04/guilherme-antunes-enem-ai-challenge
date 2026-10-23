@@ -1,3 +1,4 @@
+import { preventTouchFocus } from '../../lib/prevent-touch-focus'
 import type { SimulationQuestion } from '../../types/simulation'
 import { QuestionStatement } from './QuestionStatement'
 
@@ -60,6 +61,7 @@ export function QuestionCard({
               key={alternative.id}
               type="button"
               disabled={showResult}
+              onPointerDown={preventTouchFocus}
               onClick={() => onSelect(alternative.letter)}
               className={optionClass}
             >

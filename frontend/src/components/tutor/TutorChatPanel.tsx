@@ -56,6 +56,7 @@ export function TutorChatPanel({
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const messagesScrollRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -135,7 +136,10 @@ export function TutorChatPanel({
   }, [token, mode, externalSessionId, attemptId, question?.id, simulationCache])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesScrollRef.current
+    if (!container) return
+
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
   }, [messages, sending])
 
   async function handleSend(content: string) {
@@ -242,7 +246,15 @@ export function TutorChatPanel({
             </div>
           )}
 
-          <div className="mb-4 min-h-0 flex-1 overflow-y-auto pr-1">
+          <div
+            ref={messagesScrollRef}
+            className={cn(
+              'mb-4 min-h-0 overflow-y-auto pr-1',
+              docked
+                ? 'flex-1'
+                : 'max-h-[min(22rem,42dvh)] min-h-[8rem] lg:max-h-none lg:flex-1',
+            )}
+          >
             {loading ? (
               <p className="text-sm text-muted">Carregando conversa...</p>
             ) : (

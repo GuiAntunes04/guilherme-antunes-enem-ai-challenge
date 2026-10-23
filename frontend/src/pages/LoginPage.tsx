@@ -38,7 +38,6 @@ export function LoginPage() {
       subtitle="Acesse sua conta para continuar estudando"
       navLink={{ to: '/register', label: 'Criar conta' }}
       marketing={{
-        eyebrow: 'ENEM Prep AI',
         headline: 'Estude para o ENEM com simulados, tutor IA e redação',
         subheadline: 'Sua preparação em um só lugar.',
         body: (

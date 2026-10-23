@@ -7,7 +7,7 @@ import { ThemeToggle } from './ui/ThemeToggle'
 import { cn } from '../lib/cn'
 
 export type AuthMarketing = {
-  eyebrow: string
+  eyebrow?: string
   headline: string
   subheadline?: string
   body: ReactNode
@@ -99,17 +99,20 @@ export function AuthLayout({
           </section>
 
           <aside className="order-1 min-w-0 w-full md:order-1 md:max-w-none">
-            <p
-              className={cn(
-                'text-[0.65rem] font-bold uppercase tracking-[0.18em] sm:text-xs sm:tracking-[0.2em]',
-                isLight ? 'text-accent-strong' : 'text-accent-soft',
-              )}
-            >
-              {marketing.eyebrow}
-            </p>
+            {marketing.eyebrow && (
+              <p
+                className={cn(
+                  'text-[0.65rem] font-bold uppercase tracking-[0.18em] sm:text-xs sm:tracking-[0.2em]',
+                  isLight ? 'text-accent-strong' : 'text-accent-soft',
+                )}
+              >
+                {marketing.eyebrow}
+              </p>
+            )}
             <h1
               className={cn(
-                'mt-3 font-display text-2xl font-bold leading-tight sm:mt-4 sm:text-3xl md:text-[2rem] md:leading-[1.15] lg:text-[2.5rem] xl:text-[2.65rem]',
+                'font-display text-2xl font-bold leading-tight sm:text-3xl md:text-[2rem] md:leading-[1.15] lg:text-[2.5rem] xl:text-[2.65rem]',
+                marketing.eyebrow ? 'mt-3 sm:mt-4' : 'mt-0',
                 isLight ? 'text-foreground' : 'text-white',
               )}
             >
